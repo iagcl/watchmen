@@ -1,0 +1,125 @@
+# Copyright 2017 Insurance Australia Group Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Watchmen-Citizen Compliance Bootstrap Version 0.2"
+
+Parameters:
+
+  WatchmenAccount:
+    Description: The Watchmen AWS account that has all the lambda functions.
+    Type: String
+
+  CloudFormationS3Bucket:
+    Description: The S3 bucket which stores the CloudFormation templates for the nested stacks
+    Type: String
+    Default: watchmen-citizen-templates
+
+  Prefix:
+    Description: Environment prefix
+    Type: String
+    AllowedPattern: '[a-z0-9-_]*'
+    ConstraintDescription: Must be lowercase. Hyphen and numbers allowed. No spaces.
+
+Resources:
+
+###########################################
+#  Resources for the Citizen Stack to Run #
+###########################################
+
+  # Create role for linked account that will be used by master account.
+  CitizenConfigRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${Prefix}Citizen"
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${WatchmenAccount}:root"
+            Action:
+              - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSConfigRole
+        - arn:aws:iam::aws:policy/service-role/AWSConfigRulesExecutionRole
+        - arn:aws:iam::aws:policy/ReadOnlyAccess
+
+  # Policy to allow the CitizenConfigRole to delete config evaluations
+  CitizenConfigPolicy:
+      Type: "AWS::IAM::ManagedPolicy"
+      DependsOn: CitizenConfigRole
+      Properties:
+        ManagedPolicyName: !Sub "${Prefix}CitizenConfigPolicy"
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "config:DeleteEvaluationResults"
+              Resource:
+                - "*"
+        Roles:
+          - !Sub "${Prefix}Citizen"
+
+##########################################################################
+# Resources for the Citizen Update function to keep the rules up to date #
+##########################################################################
+
+  # Role for the update lambda function to assume
+  CitizenUpdateRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub "${Prefix}CitizenUpdate"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${WatchmenAccount}:root"
+            Action:
+              - sts:AssumeRole
+
+  # Policy for the update lambda to allow it to create the cfn stack
+  CitizenUpdatePolicy:
+      Type: "AWS::IAM::ManagedPolicy"
+      DependsOn: CitizenUpdateRole
+      Properties:
+        ManagedPolicyName: !Sub "${Prefix}CitizenUpdatePolicy"
+        PolicyDocument:
+          Version: 2012-10-17
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:GetObject"
+                - "cloudformation:DescribeStacks"
+                - "cloudformation:CreateStack"
+                - "cloudformation:UpdateStack"
+                - "cloudformation:DeleteStack"
+                - "config:DescribeConfigRules"
+                - "config:PutConfigRule"
+                - "config:DeleteConfigRule"
+              Resource:
+                - "*"
+        Roles:
+          - !Sub "${Prefix}CitizenUpdate"
+
+  CitizenRules:
+    Type: "AWS::CloudFormation::Stack"
+    DependsOn: CitizenConfigPolicy
+    Properties:
+      Parameters:
+        WatchmenAccount: !Ref WatchmenAccount
+        Prefix: !Ref Prefix
+      TemplateURL: !Sub "https://s3.amazonaws.com/${CloudFormationS3Bucket}/citizen-rules-cfn.yml"

@@ -1,0 +1,167 @@
+# Copyright 2017 Insurance Australia Group Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested AWS stack for Monitoring resources used by Watchmen.
+
+Parameters:
+
+  Prefix: # Passed from parent stack
+    Description: Environment prefix.
+    Type: String
+    AllowedPattern: '[a-z0-9-_]*'
+    ConstraintDescription: "Must be lowercase.Hyphen and numbers allowed.No spaces"
+
+  SlackChannel: # Passed from parent stack
+    Description: "Slack Channel Name"
+    Type: String
+
+  SlackChannelHookUrl: # Passed from parent stack
+    Description: "Slack Channel Web Hook Url"
+    Type: String
+
+  EmailNotification: # Passed from parent stack
+    Description: "Email to send Notifications to"
+    Type: String
+
+  RetentionInDays: # Using default
+    Description: The number of days log events are kept in CloudWatch Logs.
+    Type: Number
+    ConstraintDescription: Must be a valid retention in days Value
+    Default: 30
+
+Resources:
+
+  MonitoringRole: # Role which Lambda will use when executing lambda function triggered by Cloudwatch
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Prefix}Watchmen-Monitoring"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+  MonitoringPolicy: # Managed policy for lambda role
+      Type: AWS::IAM::ManagedPolicy
+      DependsOn: MonitoringRole
+      Properties:
+        ManagedPolicyName: !Sub "${Prefix}watchmen-monitoring"
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - logs:CreateLogGroup
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: arn:aws:logs:*:*:*
+        Roles:
+          - !Sub "${Prefix}watchmen-monitoring"
+
+  CloudwatchAlarmToSlack: # Lambda function send notifications to Slack
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Prefix}CloudwatchAlarmToSlack"
+      Description: "Python function to send Cloudwatch Alarms to Slack"
+      Handler: index.lambda_handler
+      Role: !GetAtt MonitoringRole.Arn
+      Runtime: python2.7
+      Environment:
+        Variables:
+          slackChannel: !Ref SlackChannel
+          slackChannelHookUrl: !Ref SlackChannelHookUrl
+      Code:
+        ZipFile: !Sub |
+            from __future__ import print_function
+            import boto3
+            import json
+            import logging
+            import os
+            from urllib2 import Request, urlopen, URLError, HTTPError
+            # The Slack channel to send a message to stored in the slackChannel environment variable
+            SLACK_CHANNEL = os.environ['slackChannel']
+            HOOK_URL = "https://" + os.environ['slackChannelHookUrl']
+            logger = logging.getLogger()
+            logger.setLevel(logging.INFO)
+
+            def lambda_handler(event, context):
+                logger.info("Event: " + str(event))
+                message = json.loads(event['Records'][0]['Sns']['Message'])
+                logger.info("Message: " + str(message))
+
+                alarm_name = message['AlarmName']
+                #old_state = message['OldStateValue']
+                new_state = message['NewStateValue']
+                reason = message['NewStateReason']
+
+                slack_message = {
+                    'channel': SLACK_CHANNEL,
+                    'text': "%s state is now %s: %s" % (alarm_name, new_state, reason)
+                }
+
+                req = Request(HOOK_URL, json.dumps(slack_message))
+                try:
+                    response = urlopen(req)
+                    response.read()
+                    logger.info("Message posted to %s", slack_message['channel'])
+                except HTTPError as e:
+                    logger.error("Request failed: %d %s", e.code, e.reason)
+                except URLError as e:
+                    logger.error("Server connection failed: %s", e.reason)
+
+  LogGroupCloudwatchAlarmToSlack: # Log group for Lambda function
+    Type: "AWS::Logs::LogGroup"
+    Properties:
+      LogGroupName: !Join [ "", [ "/aws/lambda/", !Ref Prefix , "CloudwatchAlarmToSlack"] ]
+      RetentionInDays: !Ref RetentionInDays
+
+  AlarmTopic: # SNS Topic to send notifcations to Slack and email
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName: !Sub "${Prefix}LambdaErrorAlarm"
+      TopicName: !Sub "${Prefix}watchmen-lambda-alarm"
+      Subscription:
+        - Endpoint: !GetAtt CloudwatchAlarmToSlack.Arn
+          Protocol: lambda
+        - Endpoint: !Ref EmailNotification
+          Protocol: email
+
+  CloudwatchAlarmToSlackPermission: # Provide SNS the permission to use CloudwatchAlarmToSlack function
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CloudwatchAlarmToSlack
+      Action: "lambda:InvokeFunction"
+      Principal: "sns.amazonaws.com"
+      SourceArn: !Ref AlarmTopic
+
+  LambdaErrorAlarm: # CloudWatch alarm that triggers when ANY Lambda (even non Watchmen lambdas) in the account has an error
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - Ref: AlarmTopic
+      AlarmName: !Sub "${Prefix}watchmen-lambda-alarm"
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      EvaluationPeriods: 1
+      MetricName: Errors
+      Namespace: "AWS/Lambda"
+      Period: 60
+      Statistic: Sum
+      Threshold: 1
+      TreatMissingData: notBreaching

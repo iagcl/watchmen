@@ -1,0 +1,116 @@
+# Copyright 2017 Insurance Australia Group Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Nested AWS stack for core IAM role used by Watchmen Lambda functions.
+
+Parameters:
+
+  Prefix: # Passed from parent stack
+    Description: Environment prefix.
+    Type: String
+    AllowedPattern: '[a-z0-9-_]*'
+    ConstraintDescription: "Must be lowercase.Hyphen and numbers allowed.No spaces"
+
+Resources:
+
+  LambdaExecutionRole:
+    # Role used by all Verifcation Rule lambda functions in VerifcationRules stack.
+    # Also used by GenerateCompliance lambda in Reporting stack.
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${Prefix}Watchmen"
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+
+  LoggingPolicy: # Logging policy for Lambda Execution Role
+    Type: AWS::IAM::ManagedPolicy
+    DependsOn: LambdaExecutionRole
+    Properties:
+      ManagedPolicyName: !Sub "${Prefix}WatchmenLogs"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: arn:aws:logs:*:*:*
+      Roles:
+        - !Sub "${Prefix}Watchmen"
+
+  S3Policy: # S3 policy to put objects into S3 buckets
+    Type: AWS::IAM::ManagedPolicy
+    DependsOn: LoggingPolicy
+    Properties:
+      ManagedPolicyName: !Sub "${Prefix}WatchmenS3"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource: "*"
+      Roles:
+        - !Sub "${Prefix}Watchmen"
+
+  LambdaPolicy: # Policy to allow role to call other lambda fucntions
+    Type: AWS::IAM::ManagedPolicy
+    DependsOn: S3Policy
+    Properties:
+      ManagedPolicyName: !Sub "${Prefix}WatchmenLambda"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:InvokeFunction
+            Resource: "*"
+      Roles:
+        - !Sub "${Prefix}Watchmen"
+
+  AssumeRolePolicy: # Policy that will allow this role to assume a role in Citizen account
+    Type: AWS::IAM::ManagedPolicy
+    DependsOn: S3Policy
+    Properties:
+      ManagedPolicyName: !Sub "${Prefix}WatchmenSTS"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Resource:
+{{citizen_roles}}
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Resource:
+{{citizen_update_roles}}
+      Roles:
+        - !Sub "${Prefix}Watchmen"
+
+Outputs:
+
+  LambdaExecutionRole: # THis output is required so that other stacks can reference.
+    Value: !GetAtt LambdaExecutionRole.Arn

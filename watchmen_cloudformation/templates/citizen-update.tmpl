@@ -1,0 +1,135 @@
+# Copyright 2017 Insurance Australia Group Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+---
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Nested AWS stack for Citizen Update resources used by Watchmen.
+
+Parameters:
+
+  Prefix: # Passed from parent stack
+    Description: Environment prefix.
+    Type: String
+    AllowedPattern: '[a-z0-9-_]*'
+    ConstraintDescription: "Must be lowercase.Hyphen and numbers allowed.No spaces"
+
+  DeployElasticSearch: # Passed from parent stack
+    Description: Conditional parameter to control if ElasticSearch stack should be run.
+    Type: String
+
+  DistributionS3BucketName: # Passed from parent stack
+    Description: The S3 bucket which stores the citizen template for distribution to the citizens
+    Type: String
+
+  DistributionS3BucketAccess: # Passed from parent stack
+    Description: The IP address's that can access the distribution s3 bucket
+    Type: String
+
+  LambdaExecutionRole: # Passed from parent stack
+    Description: Lambda execution role
+    Type: String
+
+  LambdaS3Bucket: # Passed from parent stack
+    Type: String
+
+  RetentionInDays: # Using default
+    Description: The number of days log events are kept in CloudWatch Logs.
+    Type: Number
+    ConstraintDescription: Must be a valid retention in days Value
+    Default: 30
+
+Conditions:
+
+  ShouldDeployElasticSearch: !Equals [ !Ref DeployElasticSearch, true ]
+
+Resources:
+
+  CitizenUpdate: # Lambda function that updates the Citizen stack on child AWS accounts
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Join [ "", [ !Ref Prefix , "CitizenUpdate" ] ]
+      Description: Updates the Citizen Stack
+      Handler: citizen_update.lambda_handler
+      Timeout: 180
+      Role: !Ref LambdaExecutionRole # Requires the IAM role from RolesStack as it needs to assume roles in other AWS aacounts
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: "{{update_citizen_stacks}}"
+      Runtime: python2.7
+
+  CitizenUpdateLogGroup: # Log group for Lambda function
+    Type: "AWS::Logs::LogGroup"
+    DependsOn: CitizenUpdate
+    Properties:
+      LogGroupName: !Join [ "", [ "/aws/lambda/", !Ref Prefix , "CitizenUpdate"] ]
+      RetentionInDays: !Ref RetentionInDays
+
+  CitizenUpdateSNSTopic: # SNS Topic to trigger to CitizenUdate trigger
+    Type: "AWS::SNS::Topic"
+    Properties:
+      DisplayName: !Sub "${Prefix}CitizenUpdates"
+      TopicName: !Sub "${Prefix}watchmen-citizen-updates"
+
+  CitizenUpdateSubscription:
+    Type: "AWS::SNS::Subscription"
+    DependsOn:
+    - CitizenUpdate
+    - CitizenUpdateSNSTopic
+    Properties:
+      Endpoint: !GetAtt CitizenUpdate.Arn
+      Protocol: lambda
+      TopicArn: !Ref CitizenUpdateSNSTopic
+
+  CitizenUpdateSubscriptionPermission: # Provide SNS the permission to trigger lambda function
+    Type: AWS::Lambda::Permission
+    DependsOn: CitizenUpdate
+    Properties:
+      FunctionName: !GetAtt CitizenUpdate.Arn
+      Action: lambda:InvokeFunction
+      Principal: sns.amazonaws.com
+      SourceArn: !Ref CitizenUpdateSNSTopic
+
+  CitizenUpdateS3BucketPolicy: # Policy for the S3 bucket which stores the Citizen cloudformation template
+    Type: "AWS::S3::BucketPolicy"
+    Properties:
+      Bucket:
+        Ref: "DistributionS3BucketName"
+      PolicyDocument:
+        Statement:
+          - Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource:
+              !Sub "arn:aws:s3:::${DistributionS3BucketName}/*"
+            Principal: "*"
+            Condition:
+              IpAddress:
+                aws:SourceIp: !Ref DistributionS3BucketAccess
+          - Action:
+              - "s3:ListBucket"
+            Effect: "Allow"
+            Resource:
+              !Sub "arn:aws:s3:::${DistributionS3BucketName}"
+            Principal: "*"
+            Condition:
+              IpAddress:
+                aws:SourceIp: !Ref DistributionS3BucketAccess
+          - Action:
+              - "s3:GetObject"
+            Effect: "Allow"
+            Resource:
+              !Sub "arn:aws:s3:::${DistributionS3BucketName}/*"
+            Principal:
+              "AWS":
+{{bucket_policy_accounts}}
