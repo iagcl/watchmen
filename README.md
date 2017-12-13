@@ -3,7 +3,7 @@
 
 ***
 ## Overview...
-**Watchmen** provides the framework to centralise the lambda functions used by AWS config rules into a central AWS account so that they can be managed easily and efficiently using automation.
+**Watchmen** provides the framework to centralise the lambda functions used by AWS config rules into a single AWS account so that they can be managed easily and efficiently using automation.
 
 Essentially we deploy our **Watchmen** stack to a dedicated AWS account. We then get our other AWS accounts (**Citizens**) to deploy a Citizen stack which provides Watchmen with a role that will allow us to deploy and manage config rules in their account. These config rules will be pointing to lambdas in the Watchmen account. When the config rule is trigged, Watchmen will run the lambda but will assume another role in the Citizen account so that it reports on resources in the Citizen accounts.
 
