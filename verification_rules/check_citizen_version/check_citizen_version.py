@@ -15,7 +15,7 @@
 """
 AWS Lambda source code for check_citizen_version
 RULE_DESCRIPTION: Checks to see if the deployed Citizen stack is up to date [Stack vXXX-CITIZEN-VERSION-XXX]
-ENVIRONMENT_VARIABLES: CITIZEN_S3_BUCKET
+ENVIRONMENT_VARIABLES: BUCKET_NAME_DISTRIBUTION
 """
 # To pass multiple environment variables use "ENVIRONMENT_VARIABLES: var1,var2,var3" above
 
@@ -158,7 +158,7 @@ def lambda_handler(event, context):
 
     # Read environment variable which is passed into the Lambda
     lambda_env_var = json.loads(os.environ['env_var']) if 'env_var' in os.environ else ''
-    citizen_s3_bucket = lambda_env_var.get('CITIZEN_S3_BUCKET') if lambda_env_var else ''
+    citizen_s3_bucket = lambda_env_var.get('BUCKET_NAME_DISTRIBUTION') if lambda_env_var else ''
 
     arn = rule_parameters["executionRoleArn"] if "executionRoleArn" in rule_parameters else None
     is_test_mode = rule_parameters.get("testMode", False)
