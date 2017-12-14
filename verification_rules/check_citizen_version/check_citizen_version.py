@@ -15,7 +15,7 @@
 """
 AWS Lambda source code for check_citizen_version
 RULE_DESCRIPTION: Checks to see if the deployed Citizen stack is up to date [Stack vXXX-CITIZEN-VERSION-XXX]
-ENVIRONMENT_VARIABLES: prefix
+ENVIRONMENT_VARIABLES: BUCKET_NAME_DISTRIBUTION
 """
 # To pass multiple environment variables use "ENVIRONMENT_VARIABLES: var1,var2,var3" above
 
@@ -36,7 +36,7 @@ import common.evaluation as evaluation
 import common.logger as logger
 import common.credential as credential
 
-def get_prod_citizen_version(b3_s3, prefix):
+def get_prod_citizen_version(b3_s3, citizen_s3_bucket):
     """Retrieves the version number of a CloudFormation template from a S3 bucket.
 
     Args:
@@ -48,7 +48,7 @@ def get_prod_citizen_version(b3_s3, prefix):
     """
     # get the latest cloudformation template from s3
     prod_citizen_template_stream = \
-        b3_s3.get_object(Bucket=prefix + 'watchmen-citizen-templates', Key='citizen-rules-cfn.yml')
+        b3_s3.get_object(Bucket=citizen_s3_bucket, Key='citizen-rules-cfn.yml')
 
     # We expect the version to be within the first 750 bytes (license header text included),
     # so lets only read that.
@@ -158,7 +158,7 @@ def lambda_handler(event, context):
 
     # Read environment variable which is passed into the Lambda
     lambda_env_var = json.loads(os.environ['env_var']) if 'env_var' in os.environ else ''
-    prefix = lambda_env_var.get('prefix') if lambda_env_var else ''
+    citizen_s3_bucket = lambda_env_var.get('BUCKET_NAME_DISTRIBUTION') if lambda_env_var else ''
 
     arn = rule_parameters["executionRoleArn"] if "executionRoleArn" in rule_parameters else None
     is_test_mode = rule_parameters.get("testMode", False)
@@ -175,7 +175,7 @@ def lambda_handler(event, context):
         event.get("configRuleName")
     )
 
-    prod_citizen_version = get_prod_citizen_version(b3_s3, prefix)
+    prod_citizen_version = get_prod_citizen_version(b3_s3, citizen_s3_bucket)
     stacks = describe_active_stacks(b3_cloudformation)
     citizen_stacks = get_citizen_stacks(stacks)
 
