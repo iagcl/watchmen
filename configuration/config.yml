@@ -4,7 +4,7 @@ AccountsCsv: 'accounts/aws_accounts.csv'
 
 # Query AWS Org for list of Accounts
 UseAWSOrganisations: false
-MasterAccountRoleArn: 'arn:aws:iam::879492062654:role/tech-auto-master-watchmen-role' # If using AWS Org, provide ARN of role to be used to query AWS Org
+MasterAccountRoleArn: 'arn:aws:iam::123456789101:role/AWSOrganisationRole' # If using AWS Org, provide ARN of role to be used to query AWS Org
 
 # Company's External CIDR Range to lock down Kibana Web Access and S3 Buckets
 ExternalCidr: '0.0.0.0/0'
