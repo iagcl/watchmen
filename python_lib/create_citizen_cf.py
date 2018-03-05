@@ -12,45 +12,51 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from get_verification_rules import get_rules
-from common import generate_file, to_camel_case, get_temp
+import get_verification_rules
+import common
+import os
 
-RULES_TEMP_BASE = "citizen_cloudformation/templates/citizen-rules-cfn.tmpl"
-TEMP_DESTINATION = "citizen_cloudformation/files/citizen-rules-cfn.yml"
+RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"citizen_cloudformation/templates/citizen-rules-cfn.tmpl"
+TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"citizen_cloudformation/files/citizen-rules-cfn.yml"
 
 def get_rules_cf(rules):
-    return reduce(lambda rule_cf, rule: get_rule_cf(rule_cf, rule), rules, "")
+    snippet = ""
 
-def get_rule_cf(rule_cf, rule):
-    temp = \
+    for rule in rules:
+        template = \
+"""  {rule_name}:
+    Type: AWS::Config::ConfigRule
+    Properties:
+      ConfigRuleName: !Sub "${Prefix}{rule_name}"
+      Description: {rule_description}
+      Source:
+        Owner: CUSTOM_LAMBDA
+        SourceDetails:
+          -
+            EventSource: aws.config
+            MessageType: ScheduledNotification
+            MaximumExecutionFrequency: TwentyFour_Hours
+        SourceIdentifier: !Sub "arn:aws:lambda:${AWS::Region}:${WatchmenAccount}:function:${Prefix}ProxyLambda"
+
 """
- {rule_name}:
-   Type: AWS::Config::ConfigRule
-   Properties:
-     ConfigRuleName: !Sub "${Prefix}{rule_name}"
-     Description: {rule_description}
-     InputParameters:
-       executionRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Prefix}Citizen"
-     Source:
-       Owner: CUSTOM_LAMBDA
-       SourceDetails:
-         -
-           EventSource: aws.config
-           MessageType: ScheduledNotification
-           MaximumExecutionFrequency: TwentyFour_Hours
-       SourceIdentifier: !Join ["", [!Sub "arn:aws:lambda:${AWS::Region}:", Ref: WatchmenAccount, ":function:", !Sub "${Prefix}{rule_name}"]]
-"""
-    rule_cf += temp.replace("{rule_name}", to_camel_case(rule.get('name'))) \
-                   .replace("{rule_description}", rule.get('description'))
-    return rule_cf
+
+        snippet += template.replace(
+            "{rule_name}",
+            common.to_pascal_case(rule.get('name'))
+        ).replace(
+            "{rule_description}",
+            rule.get('description')
+        )
+
+    return snippet
 
 def main():
-    citizen_rules_cfn = get_temp(RULES_TEMP_BASE).replace(
+    citizen_rules_cfn = common.get_template(RULES_TEMPLATE_BASE).replace(
         "{{citizen_rules}}",
-        get_rules_cf(get_rules())
-        # get_rules_cf([{'description': 'Placeholder', 'name': 'check_root_access_keys' }])
+        get_rules_cf(get_verification_rules.get_rules())
     )
-    generate_file(TEMP_DESTINATION, citizen_rules_cfn)
+
+    common.generate_file(TEMPLATE_DESTINATION, citizen_rules_cfn)
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,7 @@
+[MASTER]
+# ignore code from 3rd party modules
+ignore=yaml,enum,s3transfer,skew,packages
+
+# disable relative-import and import-error messages (we package the code from the sub-directory)
+# disable duplicate-code messages (we expect some duplicate code between the functions)
+disable=relative-import,import-error,duplicate-code

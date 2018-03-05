@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+#!/usr/bin/env python
 import os
+import sys
 from setuptools import setup
+
+sys.path.append('watchmen_core')
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level

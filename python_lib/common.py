@@ -17,23 +17,30 @@ import os
 import re
 
 def generate_file(file_path, content):
+    path = os.path.dirname(file_path)
+
+    # if the path does not exist, create it
+    if not os.path.exists(path):
+        os.makedirs(path)
+
     # remove the file if it exists
     if os.path.exists(file_path):
         print "Removing \"{}\"".format(file_path)
         os.remove(file_path)
+
     with open(file_path, "w") as filer:
         filer.write(content)
 
-def to_camel_case(snake_str):
+def to_pascal_case(snake_str):
     components = snake_str.split('_')
     return "".join(x.title() for x in components)
 
 def to_snake_case(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+    str1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', str1).lower()
 
-def get_temp(temp_base):
+def get_template(template_base):
     template = ""
-    with open(temp_base) as filer:
+    with open(template_base) as filer:
         template = filer.read()
     return template
