@@ -35,6 +35,7 @@ if os.path.isdir(os.path.join(PARENT_PATH, "common")):
 import common.credential as credential
 import common.evaluation as evaluation
 import common.logger as logger
+import common.rule_parameter as rule_parameter
 
 def lambda_handler(event, context):
     """
@@ -46,13 +47,17 @@ def lambda_handler(event, context):
     Returns:
         None
     """
+    citizen_exec_role_arn = event["citizen_exec_role_arn"]
+    event = event["config_event"]
+
     logger.log_event(event, context, None, None)
     invoking_event = json.loads(event["invokingEvent"])
-    rule_parameters = json.loads(event["ruleParameters"])
-    is_test_mode = rule_parameters["testMode"] if "testMode" in rule_parameters else False
-    arn = rule_parameters["executionRoleArn"] if "executionRoleArn" in rule_parameters else None
 
-    assumed_creds = credential.get_assumed_creds(boto3.client("sts"), arn)
+    rule_parameters = rule_parameter.RuleParameter(event)
+    is_test_mode = rule_parameters.get("testMode", False)
+
+    assumed_creds = credential.get_assumed_creds(boto3.client("sts"), citizen_exec_role_arn)
+
     config = boto3.client("config", **assumed_creds)
     s3_b3_client = boto3.client("s3", **assumed_creds)
 
@@ -84,9 +89,10 @@ def lambda_handler(event, context):
             compliance_type = "NON_COMPLIANT"
             if "Name" in bucket:
                 if bucket["Name"] in encrypted_buckets:
-                    annotation = "S3 Bucket has Encryption Policy"
+                    annotation = "S3 Bucket has Encryption"
                     compliance_type = "COMPLIANT"
-                annotation = "S3 Bucket has NO Encryption Policy"
+                else:
+                    annotation = "S3 Bucket has No Encryption"
             else:
                 annotation = "Invalid S3 bucket"
 

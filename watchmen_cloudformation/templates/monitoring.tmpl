@@ -14,27 +14,30 @@
 #
 ---
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Nested AWS stack for Monitoring resources used by Watchmen.
+Description: AWS stack for Monitoring resources used by Watchmen.
 
 Parameters:
 
-  Prefix: # Passed from parent stack
+  Prefix:
     Description: Environment prefix.
     Type: String
     AllowedPattern: '[a-z0-9-_]*'
-    ConstraintDescription: "Must be lowercase.Hyphen and numbers allowed.No spaces"
+    ConstraintDescription: "Must be lowercase. Hyphen and numbers allowed. No spaces."
 
-  SlackChannel: # Passed from parent stack
-    Description: "Slack Channel Name"
+  SlackChannel:
+    Description: Slack channel name to send notifications.
     Type: String
+    Default: "{{notifications_slack}}"
 
-  SlackChannelHookUrl: # Passed from parent stack
-    Description: "Slack Channel Web Hook Url"
+  SlackChannelHookUrl:
+    Description: Slack Channel Web Hook Url
     Type: String
+    Default: "{{slack_channel_hook_url}}"
 
-  EmailNotification: # Passed from parent stack
-    Description: "Email to send Notifications to"
+  EmailNotification:
+    Description: Email to send notifications.
     Type: String
+    Default: {{notifications_email}}
 
   RetentionInDays: # Using default
     Description: The number of days log events are kept in CloudWatch Logs.
@@ -129,7 +132,7 @@ Resources:
   LogGroupCloudwatchAlarmToSlack: # Log group for Lambda function
     Type: "AWS::Logs::LogGroup"
     Properties:
-      LogGroupName: !Join [ "", [ "/aws/lambda/", !Ref Prefix , "CloudwatchAlarmToSlack"] ]
+      LogGroupName: !Sub "/aws/lambda/${Prefix}CloudwatchAlarmToSlack"
       RetentionInDays: !Ref RetentionInDays
 
   AlarmTopic: # SNS Topic to send notifcations to Slack and email

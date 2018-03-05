@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+import python_lib.get_notifications as notifications
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
+def test_get_notification_email():
+    assert notifications.get_notification_email()
 
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
+def test_get_notification_slack():
+    assert notifications.get_notification_slack()
 
-if __name__ == "__main__":
-    main()
+def test_get_slack_channel_hook_url():
+    assert notifications.get_slack_channel_hook_url()

@@ -16,13 +16,12 @@
 CloudTrail class that checks if cloudtrail is configured correctly
 """
 class CloudTrail(object):
-    """CloudTrail"""
-    def __init__(self, b3_cloudtrail):
-        """Constructor
+    """Retrieves CloudTrail information and uses it accordingly.
 
-        Args:
-            b3_cloudtrail: boto3 cloudtrail client
-        """
+    Args:
+        b3_cloudtrail: boto3 cloudtrail client
+    """
+    def __init__(self, b3_cloudtrail):
         self._trails = b3_cloudtrail.describe_trails(
             trailNameList=[],
             includeShadowTrails=False

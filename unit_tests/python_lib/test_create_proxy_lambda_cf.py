@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+from mock import patch
+import python_lib.create_proxy_lambda_cf as proxy_lambda_cf
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
+def test_get_accounts_permissions():
+    accounts = ["1", "2", "3"]
+    result = proxy_lambda_cf.get_accounts_permissions(accounts)
 
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
+    for account in accounts:
+        assert 'SourceAccount: "{}"'.format(account) in result
 
-if __name__ == "__main__":
-    main()
+@patch("python_lib.get_checksum_zip.get_checksum_zip", return_value="proxy_lambda.123.zip")
+@patch("python_lib.get_accounts.get_accounts")
+def test_main(mock_get_accounts, mock_checksum_zip):
+    assert proxy_lambda_cf.main() is None

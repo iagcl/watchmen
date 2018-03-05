@@ -12,21 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import common
-import get_accounts
-import get_checksum_zip
 import os
+import python_lib.get_verification_rules as verification_rules
 
-TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/reporting.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/reporting.yml"
+def test_get_rules_raw_default():
+    assert verification_rules.get_rules_raw()
 
-def main():
-    reporting_cf = common.get_template(TEMPLATE_BASE).replace(
-        "{{import_config_rule_status}}",
-        get_checksum_zip.get_checksum_zip("import_config_rule_status")
-    )
+def test_get_rules_raw_true():
+    assert verification_rules.get_rules_raw()
 
-    common.generate_file(TEMPLATE_DESTINATION, reporting_cf) # Creates the deployable CF file
+def test_get_rules():
+    assert verification_rules.get_rules()
 
-if __name__ == "__main__":
-    main()
+def test_get_environment():
+    os.environ["BUCKET_NAME_DISTRIBUTION"] = "test_bucket"
+    result = verification_rules.get_environment("check_citizen_version")
+    os.environ.pop("BUCKET_NAME_DISTRIBUTION")
+
+    assert result
+
+def test_get_description():
+    assert verification_rules.get_description("check_citizen_version")

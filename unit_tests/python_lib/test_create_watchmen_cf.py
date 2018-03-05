@@ -12,16 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+from mock import patch
+import python_lib.create_watchmen_cf as watchmen_cf
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
-
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
-
-if __name__ == "__main__":
-    main()
+@patch("python_lib.get_checksum_zip.get_checksum_zip", return_value="zip.123.zip")
+def test_main(mock_checksum_zip):
+    assert watchmen_cf.main() is None

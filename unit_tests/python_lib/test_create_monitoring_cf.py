@@ -12,16 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+import python_lib.create_monitoring_cf as monitoring_cf
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
-
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
-
-if __name__ == "__main__":
-    main()
+def test_main():
+    assert monitoring_cf.main() is None

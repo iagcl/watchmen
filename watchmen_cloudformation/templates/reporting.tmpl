@@ -14,25 +14,21 @@
 #
 ---
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Nested AWS stack for Reporting resources used by Watchmen.
+Description: AWS stack for Reporting resources used by Watchmen.
 
 Parameters:
 
-  Prefix: # Passed from parent stack
+  Prefix:
     Description: Environment prefix.
     Type: String
     AllowedPattern: '[a-z0-9-_]*'
     ConstraintDescription: "Must be lowercase.Hyphen and numbers allowed.No spaces"
 
-  LambdaS3Bucket: # Passed from parent stack
+  LambdaS3Bucket:
     Description: The S3 bucket which stores the lambda functions
     Type: String
 
-  ReportS3Bucket: # Passed from parent stack
-    Type: String
-
-  LambdaExecutionRole: # Passed from parent stack
-    Description: Lambda execution role
+  ReportS3Bucket:
     Type: String
 
   RetentionInDays: # Using default
@@ -43,27 +39,76 @@ Parameters:
 
 Resources:
 
-  GenerateComplianceReport: # Lambda function to generate compliance report for Citizen accounts
+  ImportConfigRuleStatus:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Join [ "", [ !Ref Prefix , "GenerateComplianceReport" ] ]
-      Description: Lambda function to generate compliance report for Citizen accounts
-      Handler: generate_compliance_report.lambda_handler
-      Timeout: 180
-      Role: !Ref LambdaExecutionRole
+      FunctionName: !Sub "${Prefix}ImportConfigRuleStatus"
+      Description: Lambda function to import config rule status into DynamoDB for Citizen accounts
+      Handler: import_config_rule_status.lambda_handler
+      Timeout: 300
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Prefix}Watchmen"
       Code:
         S3Bucket: !Ref LambdaS3Bucket
-        S3Key: "{{generate_compliance_report}}"
+        S3Key: "{{import_config_rule_status}}"
       Runtime: python2.7
 
-  GenerateComplianceLogGroup: # Log group for Lambda function
-    Type: "AWS::Logs::LogGroup"
-    DependsOn: GenerateComplianceReport
+  ImportConfigRuleStatusLogGroup:
+    Type: AWS::Logs::LogGroup
+    DependsOn: ImportConfigRuleStatus
     Properties:
-      LogGroupName: !Join [ "", [ "/aws/lambda/", !Ref Prefix , "GenerateComplianceReport"] ]
+      LogGroupName: !Sub "/aws/lambda/${Prefix}ImportConfigRuleStatus"
       RetentionInDays: !Ref RetentionInDays
 
-##############################################################################################
-# CloudWatch Event Rule for each account to execute GenerateComplianceReport Lambda function #
-##############################################################################################
-{{event_rule}}
+  ImportConfigRuleStatusCloudWatchEvent:
+    Type: AWS::Events::Rule
+    DependsOn: ImportConfigRuleStatus
+    Properties:
+      Name: !Sub "${Prefix}ImportConfigRuleStatus"
+      Description: Triggers the import config rule status lambda function
+      ScheduleExpression: "rate(1 day)"
+      State: ENABLED
+      Targets:
+      - Id: "Target1"
+        Arn: !GetAtt ImportConfigRuleStatus.Arn
+        Input: !Sub "{\"prefix\": \"${Prefix}\"}"
+
+  ImportConfigRuleStatusPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn: ImportConfigRuleStatus
+    Properties:
+      FunctionName: !Sub "${Prefix}ImportConfigRuleStatus"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn: !GetAtt ImportConfigRuleStatusCloudWatchEvent.Arn
+
+  CitizenAccountTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${Prefix}CitizenAccount"
+      KeySchema:
+        - AttributeName: AccountId
+          KeyType: HASH
+      AttributeDefinitions:
+        - AttributeName: AccountId
+          AttributeType: S
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
+  ConfigRuleStatusTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub "${Prefix}ConfigRuleStatus"
+      KeySchema:
+        - AttributeName: AccountId
+          KeyType: HASH
+        - AttributeName: RuleName
+          KeyType: RANGE
+      AttributeDefinitions:
+        - AttributeName: AccountId
+          AttributeType: S
+        - AttributeName: RuleName
+          AttributeType: S
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5

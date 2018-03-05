@@ -34,12 +34,14 @@ if os.path.isdir(os.path.join(PARENT_PATH, "common")):
 import common.credential as credential
 import common.evaluation as evaluation
 import common.logger as logger
+import common.rule_parameter as rule_parameter
 
 def get_compliance_type(b3_cloudtrail):
     """Returns the compliance type i.e. Compliant or Non_Compliant
 
     Args:
         b3_cloudtrail: boto3 cloudtrail client
+
     Returns:
         "COMPLIANT" or "NON_COMPLIANT" string
     """
@@ -58,17 +60,18 @@ def lambda_handler(event, context):
     Args:
         event: lambda event
         context: lambda context
-    Returns:
-        aws config put_evaluations object
     """
+    citizen_exec_role_arn = event["citizen_exec_role_arn"]
+    event = event["config_event"]
+
     logger.log_event(event, context, None, None)
+
     invoking_event = json.loads(event["invokingEvent"])
-    rule_parameters = json.loads(event["ruleParameters"])
 
-    is_test_mode = rule_parameters["testMode"] if "testMode" in rule_parameters else False
-    arn = rule_parameters["executionRoleArn"] if "executionRoleArn" in rule_parameters else None
+    parameter = rule_parameter.RuleParameter(event)
+    is_test_mode = parameter.get("testMode", False)
 
-    assumed_creds = credential.get_assumed_creds(boto3.client("sts"), arn)
+    assumed_creds = credential.get_assumed_creds(boto3.client("sts"), citizen_exec_role_arn)
     config = boto3.client("config", **assumed_creds)
 
     compliance_type = get_compliance_type(boto3.client("cloudtrail", **assumed_creds))

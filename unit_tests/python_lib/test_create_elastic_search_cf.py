@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+from mock import patch
+import python_lib.create_elastic_search_cf as elastic_search_cf
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
+def test_get_subscriptions_cf():
+    rules = [
+        {"name": "test_name_1", "description": "test_desc_1"},
+        {"name": "test_name_2", "description": "test_desc_2"}
+    ]
 
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
+    result = elastic_search_cf.get_subscriptions_cf(rules)
 
-if __name__ == "__main__":
-    main()
+    assert "TestName1Subscription" in result
+    assert "TestName2Subscription" in result
+
+@patch("python_lib.get_checksum_zip.get_checksum_zip", return_value="roll_indexes.123.zip")
+def test_main(mock_checksum_zip):
+    assert elastic_search_cf.main() is None

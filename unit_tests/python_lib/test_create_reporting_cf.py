@@ -12,16 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+from mock import patch
+import python_lib.create_reporting_cf as reporting_cf
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
-
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
-
-if __name__ == "__main__":
-    main()
+@patch("python_lib.get_checksum_zip.get_checksum_zip", return_value="generate_compliance_report.123.zip")
+@patch("python_lib.get_accounts.get_accounts")
+def test_main(mock_get_accounts, mock_checksum_zip):
+    assert reporting_cf.main() is None

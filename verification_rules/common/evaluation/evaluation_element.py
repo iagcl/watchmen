@@ -16,6 +16,7 @@
 """
 EvaluationElement class produces an object that is easily consumed by aws config put_evaluations.
 """
+import json
 
 class EvaluationElement(object):
     """Produces an object that is easily consumed by aws config put_evaluations.
@@ -59,3 +60,7 @@ class EvaluationElement(object):
     def ordering_timestamp(self):
         """Returns ordering timestamp."""
         return self._ordering_timestamp
+
+    def to_json(self):
+        """Returns json object."""
+        return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)

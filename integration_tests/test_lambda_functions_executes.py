@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import os
+import os, sys
 import json
 import base64
 import pytest
@@ -20,30 +20,22 @@ import pytest
 import boto3
 from botocore.config import Config
 
-from python_lib.get_verification_rules import get_rules_raw
-from python_lib.common import to_camel_case
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
+import python_lib.get_verification_rules as verification_rules
+import python_lib.common as common
 
 # need to use a Citizen ARN so we can run the lambda and assume role
-if "CITIZEN_ARN" in os.environ:
-    CITIZEN_ARN = os.environ["CITIZEN_ARN"]
-else:
-    CITIZEN_ARN = ""
-
-if "prefix" in os.environ:
-    PREFIX = os.environ["prefix"]
-else:
-    PREFIX = ""
-
-def _default_constructor(loader, tag_suffix, node):
-    return ""
+CITIZEN_ARN = os.environ.get("CITIZEN_ARN", "")
+PREFIX = os.environ.get("prefix", "")
 
 def describe_cf_lambda_functions():
-    """Get list of all lambda functions in Watchmen Cloud Formation"""
+    """Get list of all non-proxy lambda functions in Watchmen"""
     cf_lambda_functions_list = []
-    raw_lambdas = get_rules_raw()
+    raw_lambdas = verification_rules.get_rules_raw()
 
     for rule in raw_lambdas:
-        cf_lambda_functions_list.append(PREFIX + to_camel_case(rule))
+        cf_lambda_functions_list.append(PREFIX + common.to_pascal_case(rule))
 
     return cf_lambda_functions_list
 
@@ -57,6 +49,26 @@ CF_LAMBDAS = describe_cf_lambda_functions()
 def lambda_function(request):
     return request.param
 
+def get_compliance_type_result(response):
+    compliance_type_found = False
+
+    # If the response has an error
+    if "FunctionError" in response:
+        print "Lambda returned an error"
+    else:
+        lambda_results = base64.standard_b64decode(response["LogResult"]).split("\n")
+
+        for lambda_result in lambda_results:
+            if '"complianceType": "COMPLIANT"' in lambda_result or \
+                    '"complianceType": "NON_COMPLIANT"' in lambda_result:
+                compliance_type_found = True
+                break
+
+    return compliance_type_found
+
+##################################
+# Tests
+##################################
 def test_config_lambda_function(lambda_function):
     # assume Config Lambda function names start with Check (with prefix)
     lambda_prefix = PREFIX + "Check"
@@ -67,26 +79,20 @@ def test_config_lambda_function(lambda_function):
 
     # test payload
     payload = {
-        "configRuleName": "ConfigRuleName",
-        "resultToken": "NoResultToken",
-        "accountId": "1234567890",
-        "invokingEvent": "{\"awsAccountId\": \"1234567890\", \"notificationCreationTime\": \"2017-05-10T05:26:09.308Z\", \"messageType\": \"ScheduledNotification\", \"recordVersion\": \"1.0\"}",
-        "ruleParameters": "{\"testMode\": true, \"executionRoleArn\": \"" + CITIZEN_ARN + "\"}"
+        "citizen_exec_role_arn": CITIZEN_ARN,
+        "config_event": {
+            "configRuleName": "ConfigRuleName",
+            "resultToken": "NoResultToken",
+            "accountId": "1234567890",
+            "invokingEvent": "{\"awsAccountId\": \"1234567890\", \"notificationCreationTime\": \"2017-05-10T05:26:09.308Z\", \"messageType\": \"ScheduledNotification\", \"recordVersion\": \"1.0\"}",
+            "ruleParameters": "{\"testMode\": true}"
+        }
     }
 
-    response = B3_LAMBDA.invoke(FunctionName=lambda_function, LogType="Tail", Payload=json.dumps(payload))
+    response = B3_LAMBDA.invoke(
+        FunctionName=lambda_function,
+        LogType="Tail",
+        Payload=json.dumps(payload)
+    )
 
-    compliance_type_found = False
-
-    # if the function returned an error
-    if "FunctionError" in response:
-        print "Lambda returned an error"
-    else:
-        lambda_results = base64.standard_b64decode(response["LogResult"]).split("\n")
-
-        for lambda_result in lambda_results:
-            if '"complianceType": "COMPLIANT"' in lambda_result or '"complianceType": "NON_COMPLIANT"' in lambda_result:
-                compliance_type_found = True
-                break
-
-    assert compliance_type_found
+    assert get_compliance_type_result(response)

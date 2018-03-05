@@ -35,13 +35,14 @@ if os.path.isdir(os.path.join(PARENT_PATH, "common")):
 import common.evaluation as evaluation
 import common.logger as logger
 import common.credential as credential
+import common.rule_parameter as rule_parameter
 
 def get_prod_citizen_version(b3_s3, citizen_s3_bucket):
     """Retrieves the version number of a CloudFormation template from a S3 bucket.
 
     Args:
         b3_s3: boto3 s3 client
-        prefix: prefix string
+        citizen_s3_bucket: S3 bucket name
 
     Returns:
         Prod citizen version string
@@ -71,14 +72,14 @@ def get_prod_citizen_version(b3_s3, citizen_s3_bucket):
     return prod_citizen_version
 
 def get_citizen_stacks(stacks):
-    """Loop through the active stacks if we the stack description looks like a citizen stack,
+    """Loop through the active stacks and if the stack description looks like a citizen stack,
     add it to our list
 
     Args:
         stacks: all cloudformation stacks in account
 
     Returns:
-        Stacks that are citizen stack
+        Stacks that are citizen stacks
     """
 
     citizen_stacks = []
@@ -145,25 +146,23 @@ def describe_active_stacks(b3_cloudformation):
     return active_stacks
 
 def lambda_handler(event, context):
-    """lambda_handler
+    """Main function.
 
     Args:
         event: lambda event
         context: lambda context
     """
+    citizen_exec_role_arn = event["citizen_exec_role_arn"]
+    event = event["config_event"]
+
     logger.log_event(event, context, None, None)
 
     invoking_event = json.loads(event["invokingEvent"])
-    rule_parameters = json.loads(event["ruleParameters"])
 
-    # Read environment variable which is passed into the Lambda
-    lambda_env_var = json.loads(os.environ['env_var']) if 'env_var' in os.environ else ''
-    citizen_s3_bucket = lambda_env_var.get('BUCKET_NAME_DISTRIBUTION') if lambda_env_var else ''
+    parameter = rule_parameter.RuleParameter(event)
+    is_test_mode = parameter.get("testMode", False)
 
-    arn = rule_parameters["executionRoleArn"] if "executionRoleArn" in rule_parameters else None
-    is_test_mode = rule_parameters.get("testMode", False)
-
-    credentials = credential.get_assumed_creds(boto3.client("sts"), arn)
+    credentials = credential.get_assumed_creds(boto3.client("sts"), citizen_exec_role_arn)
 
     b3_config = boto3.client('config', **credentials)
     b3_s3 = boto3.client('s3', **credentials)
@@ -175,7 +174,11 @@ def lambda_handler(event, context):
         event.get("configRuleName")
     )
 
-    prod_citizen_version = get_prod_citizen_version(b3_s3, citizen_s3_bucket)
+    prod_citizen_version = get_prod_citizen_version(
+        b3_s3,
+        os.environ.get("BUCKET_NAME_DISTRIBUTION", "")
+    )
+
     stacks = describe_active_stacks(b3_cloudformation)
     citizen_stacks = get_citizen_stacks(stacks)
 

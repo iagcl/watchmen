@@ -12,16 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+"""Module for region specific functions."""
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
+import boto3
 
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
+def get_all_regions(credentials):
+    """Returns a list of all AWS regions.
 
-if __name__ == "__main__":
-    main()
+    Args:
+        assumed_creds: Credentials for assuming role
+
+    Returns:
+        List of all AWS regions
+    """
+    return [
+        region.get('RegionName') for region in boto3.client(
+            'ec2', **credentials
+        ).describe_regions().get('Regions')
+    ]

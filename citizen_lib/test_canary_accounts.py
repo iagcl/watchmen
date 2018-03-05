@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import re
 import os
-import time
+import re
 import sys
-
+import time
 from datetime import datetime
 from datetime import timedelta
 
-import pytest
 import boto3
+import pytest
 
 PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, PARENT_PATH)

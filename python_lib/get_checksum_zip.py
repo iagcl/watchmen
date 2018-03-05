@@ -1,4 +1,3 @@
-
 # Copyright 2017 Insurance Australia Group Limited
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
+
 from os import listdir
 
-ZIP_FOLDER = "./zip_files"
+ZIP_FOLDER = os.environ['LOCATION_CORE']+ "/zip_files"
 
 def get_checksum_zip(file_name):
     zip_files = [
@@ -25,4 +26,7 @@ def get_checksum_zip(file_name):
     return find_checksum_zip_file_name(file_name, zip_files)
 
 def find_checksum_zip_file_name(file_name, zip_files):
-    return next(f for f in zip_files if file_name in f)
+    if zip_files:
+        return next(f for f in zip_files if file_name in f)
+    else:
+        return ""

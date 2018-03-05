@@ -12,16 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
 import os
+import python_lib.get_checksum_zip as checksum_zip
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
+TEST_NAME = "test"
+ZIP_FILES = ["test.zip"]
 
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
+def test_zip_list_empty():
+    assert not checksum_zip.find_checksum_zip_file_name(TEST_NAME, [])
 
-if __name__ == "__main__":
-    main()
+def test_zip_list_populated():
+    assert checksum_zip.find_checksum_zip_file_name(TEST_NAME, ZIP_FILES)
+
+def test_get_checksum_zip():
+    if not os.path.exists(checksum_zip.ZIP_FOLDER):
+        os.mkdir(checksum_zip.ZIP_FOLDER)
+
+    assert not checksum_zip.get_checksum_zip(TEST_NAME)

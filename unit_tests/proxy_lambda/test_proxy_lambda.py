@@ -12,16 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+import boto3
+from botocore.stub import Stubber
+from proxy_lambda.proxy_lambda import invoke_lambda
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
+def test_invoke_lambda():
+    b3_lambda = boto3.client("lambda")
 
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
+    stubber = Stubber(b3_lambda)
+    stubber.add_response("invoke", {})
 
-if __name__ == "__main__":
-    main()
+    stubber.activate()
+
+    invoke_lambda(
+        b3_lambda,
+        {
+            "accountId": "123456789012",
+            "configRuleName": "ConfigRuleName",
+            "resultToken": "resultToken"
+        }
+    )
+
+    stubber.deactivate()
+
+    assert True

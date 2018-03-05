@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import get_verification_rules
-import get_checksum_zip
-import common
-import os
+import python_lib.create_citizen_cf as citizen_cf
 
-RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/watchmen.tmpl"
-TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/watchmen.yml"
+def test_get_rules_cf():
+    rules = [
+        {"name": "test_name_1", "description": "test_desc_1"},
+        {"name": "test_name_2", "description": "test_desc_2"}
+    ]
 
-def main():
-    common.generate_file(TEMPLATE_DESTINATION, common.get_template(RULES_TEMPLATE_BASE))
+    result = citizen_cf.get_rules_cf(rules)
 
-if __name__ == "__main__":
-    main()
+    assert "TestName1:" in result
+    assert "TestName2:" in result
+
+def test_main():
+    assert citizen_cf.main() is None
