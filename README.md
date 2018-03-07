@@ -13,7 +13,7 @@ Watchmen is an AWS CloudFormation stack comprising of:
 * **Lambda** functions written in Python that process AWS resources and determine if they are compliant or non-compliant based on certain rules logic.
 * **Monitoring** stack using CloudWatch to monitor the Lambda functions.
 * **ElasticSearch** stack to ingest the logs from the Lambda functions so they can be easily visualised and searched.
-* **Reporting** stack using CloudWatch Events and additional lambda functions to report on the status of each Citizen's Config Rules.
+* **Reporting** stack using additional lambda functions to report on the status of each Citizen's Config Rules and import into DynamoDB.
 * **Citizen Update** stack using a SNS topic and additional lambda function to manage the AWS Config rules in each Citizen account.
 * Other stuff that makes everything work (IAM roles, polices, lambda permissions, etc).
 
