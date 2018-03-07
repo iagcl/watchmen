@@ -13,19 +13,13 @@
 # limitations under the License.
 #
 #!/bin/bash
-rm -rf *.cid
-rm -rf unit_tests/__pycache__
-rm -rf integration_tests/__pycache__
-rm -rf env/
-rm -rf htmlcov/
-rm -rf zip_files/
-rm -rf pylint/
-rm -rf watchmen.egg-info/
-rm -rf watchmen_cloudformation/files/citizen-update.yml
-rm -rf watchmen_cloudformation/files/es-cluster.yml
-rm -rf watchmen_cloudformation/files/es-subscriptions.yml
-rm -rf watchmen_cloudformation/files/reporting.yml
-rm -rf watchmen_cloudformation/files/roles.yml
-rm -rf watchmen_cloudformation/files/watchmen.yml
-rm -rf watchmen_cloudformation/files/verification-rule.yml
-rm -rf citizen_cloudformation/files/citizen-rules-cfn.yml
+rm -rf $LOCATION_CORE/*.cid
+rm -rf $LOCATION_CORE/unit_tests/__pycache__
+rm -rf $LOCATION_CORE/integration_tests/__pycache__
+rm -rf $LOCATION_CORE/env/
+rm -rf $LOCATION_CORE/htmlcov/
+rm -rf $LOCATION_CORE/zip_files/
+rm -rf $LOCATION_CORE/pylint/
+rm -rf $LOCATION_CORE/watchmen.egg-info/
+rm -rf $LOCATION_CORE/watchmen_cloudformation/files/
+rm -rf $LOCATION_CORE/citizen_cloudformation/files/citizen-rules-cfn.yml*

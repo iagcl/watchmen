@@ -13,12 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import os
-import sys
-
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.insert(0, PARENT_PATH)
-
 from configuration.initialise_config import watchmen_vars
 
 def get_external_cidr():

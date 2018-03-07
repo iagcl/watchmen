@@ -1,0 +1,68 @@
+# Copyright 2017 Insurance Australia Group Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+---
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS stack for the proxy lambda
+
+Parameters:
+
+  Prefix:
+    Description: Environment prefix
+    Type: String
+    AllowedPattern: '[a-z0-9-_]*'
+    ConstraintDescription: "Must be lowercase. Hyphen and numbers allowed. No spaces."
+    Default: ""
+
+  LambdaExecutionRole:
+    Description: The Role for Lambda to use
+    Type: String
+
+  LambdaS3Bucket:
+    Description: The S3 bucket which stores the lambda functions
+    Type: String
+
+  RetentionInDays:
+    Description: The number of days log events are kept in CloudWatch Logs
+    Type: Number
+    ConstraintDescription: Must be a valid retention in days value
+    Default: 30
+
+Resources:
+
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "${Prefix}ProxyLambda"
+      Description: Gateway for the lambda verification rules
+      Environment:
+        Variables:
+          PREFIX: !Ref Prefix
+      Handler: "proxy_lambda.lambda_handler"
+      MemorySize: 256
+      Timeout: 300
+      Role: !Ref LambdaExecutionRole
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: "{{proxy_lambda_zip}}"
+      Runtime: python2.7
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${LambdaFunction}"
+      RetentionInDays: !Ref RetentionInDays
+
+{{proxy_lambda_permissions}}

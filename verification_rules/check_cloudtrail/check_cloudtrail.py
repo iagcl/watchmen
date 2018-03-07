@@ -17,29 +17,21 @@
 AWS Lambda source code for check_cloudtrail
 RULE_DESCRIPTION: CloudTrail must be enabled for Woodstock S3 bucket for all regions, all Read/Write events with log file validation enabled.
 """
-
-import os
-import sys
 import json
 import boto3
-
-from cloudtrail import CloudTrail
-
-# If the common folder is within the parent folder, add to system path.
-# Otherwise, assume it's a subfolder.
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-if os.path.isdir(os.path.join(PARENT_PATH, "common")):
-    sys.path.insert(0, PARENT_PATH)
-
 import common.credential as credential
 import common.evaluation as evaluation
 import common.logger as logger
+import common.rule_parameter as rule_parameter
+
+from cloudtrail import CloudTrail
 
 def get_compliance_type(b3_cloudtrail):
     """Returns the compliance type i.e. Compliant or Non_Compliant
 
     Args:
         b3_cloudtrail: boto3 cloudtrail client
+
     Returns:
         "COMPLIANT" or "NON_COMPLIANT" string
     """
@@ -58,17 +50,18 @@ def lambda_handler(event, context):
     Args:
         event: lambda event
         context: lambda context
-    Returns:
-        aws config put_evaluations object
     """
+    citizen_exec_role_arn = event["citizen_exec_role_arn"]
+    event = event["config_event"]
+
     logger.log_event(event, context, None, None)
+
     invoking_event = json.loads(event["invokingEvent"])
-    rule_parameters = json.loads(event["ruleParameters"])
 
-    is_test_mode = rule_parameters["testMode"] if "testMode" in rule_parameters else False
-    arn = rule_parameters["executionRoleArn"] if "executionRoleArn" in rule_parameters else None
+    parameter = rule_parameter.RuleParameter(event)
+    is_test_mode = parameter.get("testMode", False)
 
-    assumed_creds = credential.get_assumed_creds(boto3.client("sts"), arn)
+    assumed_creds = credential.get_assumed_creds(boto3.client("sts"), citizen_exec_role_arn)
     config = boto3.client("config", **assumed_creds)
 
     compliance_type = get_compliance_type(boto3.client("cloudtrail", **assumed_creds))

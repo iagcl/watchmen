@@ -14,7 +14,7 @@
 #
 ---
 AWSTemplateFormatVersion: '2010-09-09'
-Description: Nested AWS stack for core IAM role used by Watchmen Lambda functions.
+Description: AWS stack for core IAM role used by Watchmen Lambda functions.
 
 Parameters:
 
@@ -28,7 +28,6 @@ Resources:
 
   LambdaExecutionRole:
     # Role used by all Verifcation Rule lambda functions in VerifcationRules stack.
-    # Also used by GenerateCompliance lambda in Reporting stack.
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub "${Prefix}Watchmen"
@@ -61,7 +60,7 @@ Resources:
 
   S3Policy: # S3 policy to put objects into S3 buckets
     Type: AWS::IAM::ManagedPolicy
-    DependsOn: LoggingPolicy
+    DependsOn: LambdaExecutionRole
     Properties:
       ManagedPolicyName: !Sub "${Prefix}WatchmenS3"
       PolicyDocument:
@@ -76,7 +75,7 @@ Resources:
 
   LambdaPolicy: # Policy to allow role to call other lambda fucntions
     Type: AWS::IAM::ManagedPolicy
-    DependsOn: S3Policy
+    DependsOn: LambdaExecutionRole
     Properties:
       ManagedPolicyName: !Sub "${Prefix}WatchmenLambda"
       PolicyDocument:
@@ -91,7 +90,7 @@ Resources:
 
   AssumeRolePolicy: # Policy that will allow this role to assume a role in Citizen account
     Type: AWS::IAM::ManagedPolicy
-    DependsOn: S3Policy
+    DependsOn: LambdaExecutionRole
     Properties:
       ManagedPolicyName: !Sub "${Prefix}WatchmenSTS"
       PolicyDocument:
@@ -101,12 +100,26 @@ Resources:
             Action:
               - sts:AssumeRole
             Resource:
-{{citizen_roles}}
+              - !Sub "arn:aws:iam::*:role/${Prefix}Citizen"
+              - !Sub "arn:aws:iam::*:role/${Prefix}CitizenUpdate"
+      Roles:
+        - !Sub "${Prefix}Watchmen"
+
+  DynamoDBPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    DependsOn: LambdaExecutionRole
+    Properties:
+      ManagedPolicyName: !Sub "${Prefix}WatchmenDynamoDB"
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
           - Effect: Allow
             Action:
-              - sts:AssumeRole
-            Resource:
-{{citizen_update_roles}}
+              - dynamodb:BatchWriteItem
+              - dynamodb:PutItem
+              - dynamodb:DeleteItem
+              - dynamodb:Scan
+            Resource: "arn:aws:dynamodb:*:*:table/*"
       Roles:
         - !Sub "${Prefix}Watchmen"
 

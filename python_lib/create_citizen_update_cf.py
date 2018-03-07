@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from common import get_temp, generate_file
-from get_accounts import get_accounts
-from get_checksum_zip import get_checksum_zip
+import common
+import get_accounts
+import get_checksum_zip
+import get_external_cidr
+import os
 
-TEMP_BASE = "watchmen_cloudformation/templates/citizen-update.tmpl"
-TEMP_DESTINATION = "watchmen_cloudformation/files/citizen-update.yml"
+TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/citizen-update.tmpl"
+TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/citizen-update.yml"
 
 def get_bucket_policy_cf(accounts):
     bucket_policy_accounts = ""
@@ -30,14 +32,18 @@ def get_bucket_policy_cf(accounts):
     return bucket_policy_accounts
 
 def main():
-    citizen_update_cf = get_temp(TEMP_BASE).replace( # Update bucket policy with child account information
+    citizen_update_cf = common.get_template(TEMPLATE_BASE).replace(
         "{{bucket_policy_accounts}}",
-        get_bucket_policy_cf(get_accounts())
-    ).replace( # Update CitizenUpdate lambda function with checksum details
+        get_bucket_policy_cf(get_accounts.get_accounts())
+    ).replace(
         "{{update_citizen_stacks}}",
-        get_checksum_zip("update_citizen_stacks")
+        get_checksum_zip.get_checksum_zip("update_citizen_stacks")
+    ).replace(
+        "{{external_cidr}}",
+        get_external_cidr.get_external_cidr()
     )
-    generate_file(TEMP_DESTINATION, citizen_update_cf) # Creates the deployable CF file
+
+    common.generate_file(TEMPLATE_DESTINATION, citizen_update_cf) # Creates the deployable CF file
 
 if __name__ == "__main__":
     main()

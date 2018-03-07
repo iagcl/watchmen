@@ -15,63 +15,71 @@
 #!/bin/bash
 set -euo pipefail
 
-SHELL_LIB="/shell_lib"
-SCRIPT_APP_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" && pwd  )"
-APP_PATH=${SCRIPT_APP_PATH%$SHELL_LIB}
-ZIP_FILES=${APP_PATH}/zip_files
+PARENT_PATH=${PWD}
+
+ZIP_FILES=${PARENT_PATH}/zip_files
 [ -d ${ZIP_FILES} ] || mkdir ${ZIP_FILES}
 
-zip_files()
+zip_sub_folders()
 {
     for path in $(ls -d $1/*/); do
-        # don't zip the common folder, ignore it
-        if [ $(basename $path) == "common" ]
-        then
-            continue
-        fi
-
-        cd $path
-
         # if there is a 2nd parameter
         if [ $# -ge 2 ]
         then
-            # copy the "common" folder into the current folder
-            cp -R $2 $(basename $2)
+            zip_folder $path $2
+        else
+            zip_folder $path
         fi
-
-        rm -f cksum.txt
-
-        zip_file="${ZIP_FILES}/$( basename $path ).zip"
-        zip -r9 $zip_file *
-
-        # get a list of all files (within the current folder) with their checksum and place the results into a file
-        find . -type f -exec cksum {} \; > cksum.txt
-
-        # Get the checksum of the "results" file. The checksum should change if the contents of at least 1 of the files changes.
-        # Not doing a checksum on the ZIP file because we get a different checksum each time.
-        CKSUM=`cksum cksum.txt | awk '{print $1}'`
-        echo "$zip_file has checksum = $CKSUM"
-
-        mv $zip_file ${ZIP_FILES}/$( basename $path ).${CKSUM}.zip
-
-        rm -f cksum.txt
-
-        if [ $# -ge 2 ]
-        then
-            # delete the "common" folder
-            rm -rf $(basename $2)
-        fi
-
-        echo ""
     done
 }
 
-# echo "........"
-# echo $SCRIPT_APP_PATH
-# echo $APP_PATH
-zip_files ${APP_PATH}/verification_rules ${APP_PATH}/verification_rules/common
-zip_files ${APP_PATH}/reports
-zip_files ${APP_PATH}/citizen_updates
-zip_files ${APP_PATH}/elasticsearch
+zip_folder()
+{
+    # don't zip the common folder, ignore it
+    if [ $(basename $1) == "common" ]
+    then
+        return
+    fi
+
+    cd $1
+
+    # if there is a 2nd parameter
+    if [ $# -ge 2 ]
+    then
+        # copy the "common" folder into the current folder
+        cp -R $2 $(basename $2)
+    fi
+
+    rm -f cksum.txt
+
+    zip_file="${ZIP_FILES}/$( basename $1 ).zip"
+    zip -r9 $zip_file *
+
+    # get a list of all files (within the current folder) with their checksum and place the results into a file
+    find . -type f -exec cksum {} \; > cksum.txt
+
+    # Get the checksum of the "results" file. The checksum should change if the contents of at least 1 of the files changes.
+    # Not doing a checksum on the ZIP file because we get a different checksum each time.
+    CKSUM=`cksum cksum.txt | awk '{print $1}'`
+    echo "$zip_file has checksum = $CKSUM"
+
+    mv $zip_file ${ZIP_FILES}/$( basename $1 ).${CKSUM}.zip
+
+    rm -f cksum.txt
+
+    if [ $# -ge 2 ]
+    then
+        # delete the "common" folder
+        rm -rf $(basename $2)
+    fi
+
+    echo ""
+}
+
+zip_sub_folders ${PARENT_PATH}/reports
+zip_sub_folders ${PARENT_PATH}/citizen_updates
+zip_sub_folders ${PARENT_PATH}/elasticsearch
+zip_folder ${PARENT_PATH}/proxy_lambda
+zip_sub_folders ${PARENT_PATH}/verification_rules ${PARENT_PATH}/verification_rules/common
 
 aws s3 sync ${ZIP_FILES}/ s3://${BUCKET_NAME_LAMBDA}/ --no-verify-ssl

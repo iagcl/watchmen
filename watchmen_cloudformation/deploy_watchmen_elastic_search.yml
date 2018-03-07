@@ -1,0 +1,84 @@
+# Copyright 2017 Insurance Australia Group Limited
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+---
+- hosts: localhost
+  connection: local
+  vars:
+    prefix: ""
+    s3_cf_bucket: "{{ BUCKET_NAME_CF }}"
+    s3_lambda_bucket: "{{ BUCKET_NAME_LAMBDA }}"
+    elastic_search_instance_count: "{{ ELASTIC_SEARCH_INSTANCE_COUNT }}"
+    deploy_reporting: "{{ DEPLOY_REPORTING }}"
+    deploy_citizen_update: "{{ DEPLOY_CITIZEN_UPDATE }}"
+    create_subscription: "{{ CREATE_SUBSCRIPTION }}"
+    env: "{{ ENV }}"
+    billing_code: CC7504126
+    stack_name: Watchmen-ElasticSearch
+    application: Watchmen
+    server_name: WatchmenLambda
+    launched_by: bamboo_user
+  tasks:
+
+    - name: "Logging deployment variables"
+      debug:
+        msg:
+          - "prefix: {{ prefix }}"
+          - "s3_cf_bucket: {{ s3_cf_bucket }}"
+          - "s3_lambda_bucket: {{ s3_lambda_bucket }}"
+          - "elastic_search_instance_count: {{ elastic_search_instance_count }}"
+          - "deploy_reporting: {{ deploy_reporting }}"
+          - "deploy_citizen_update: {{ deploy_citizen_update }}"
+          - "create_subscription: {{ create_subscription }}"
+          - "env: {{ env }}"
+
+    - name: "Run CloudFormation template"
+      cloudformation:
+        stack_name: "{{ prefix }}{{ stack_name }}"
+        state: present
+        template_url: "https://s3-ap-southeast-2.amazonaws.com/{{ s3_cf_bucket }}/elastic-search.yml"
+        template_parameters:
+          Prefix: "{{ prefix }}"
+          LambdaS3Bucket: "{{ s3_lambda_bucket }}"
+          ElasticSearchInstanceCount: "{% if elastic_search_instance_count  == '' %}{{ 1 }}{% else %}{{ elastic_search_instance_count }}{% endif %}"
+          DeployReporting: "{% if deploy_reporting  == '' %}{{ 'false' }}{% else %}{{ deploy_reporting }}{% endif %}"
+          DeployCitizenUpdate: "{% if deploy_citizen_update  == '' %}{{ 'false' }}{% else %}{{ deploy_citizen_update }}{% endif %}"
+          CreateSubscription: "{% if create_subscription  == '' %}{{ 'true' }}{% else %}{{ create_subscription }}{% endif %}"
+        tags:
+          Environment: "{{ env }}"
+          Billing Code: "{{ billing_code }}"
+          Application: "{{ application }}"
+          Server Name: "{{ server_name }}"
+          Launched By: "{{ launched_by }}"
+        region: "{{ REGION }}"
+
+    - name: "Get CloudFormation stack info"
+      cloudformation_facts:
+        stack_name: "{{ prefix }}{{ stack_name }}"
+      register: stack
+
+    - name: "Get ansible facts for CloudFormation stack"
+      set_fact:
+        output: "{{ stack.ansible_facts.cloudformation }}"
+
+    - name: "Get CloudFormation stack status"
+      set_fact:
+        stack_status:  "{{ output[item]['stack_description']['stack_status'] }}"
+      with_items: "{{ prefix }}{{ stack_name }}"
+
+    - fail:
+        msg: "Build Failed. Stack status: {{ stack_status }}"
+      when:
+        - stack_status != "CREATE_COMPLETE"
+        - stack_status != "UPDATE_COMPLETE"

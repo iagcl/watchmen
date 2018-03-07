@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-from citizen_updates.update_citizen_stacks.citizen_update import get_citizen_stacks, is_aws_account_id
+from citizen_updates.update_citizen_stacks.citizen_update \
+    import get_citizen_stacks, is_aws_account_id
 
 _single_citizen_stack = [
     {

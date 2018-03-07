@@ -139,3 +139,7 @@ atlassian-ide-plugin.xml
 /citizen_cloudformation/files/citizen-rules-cfn.yml
 
 /pylint/
+/watchmen_cloudformation/files/proxy-rules.yml
+/watchmen_cloudformation/files/elastic-search.yml
+/watchmen_cloudformation/files/monitoring.yml
+/watchmen_cloudformation/files/proxy-lambda.yml

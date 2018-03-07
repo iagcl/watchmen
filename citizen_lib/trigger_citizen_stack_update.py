@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+"""
+This python module is for triggering citizen stacks to be updated via SNS
+"""
 import os
 import json
 import sys
 import boto3
-
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.insert(0, PARENT_PATH)
-
 from configuration.initialise_config import watchmen_vars
 
 CANARY_ACCOUNTS = watchmen_vars.CanaryAccounts
@@ -56,7 +56,6 @@ def get_csv_accounts():
 def get_organizations_accounts():
     """
     Get unique accounts from organizations
-
     Was getting endpoint error so explicitly define region and end point
     according to http://docs.aws.amazon.com/general/latest/gr/rande.html?shortFooter=true
     """

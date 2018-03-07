@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+
+import sys
+
 from collections import OrderedDict
+
+# if not 'watchmen_core' in sys.path:
+#     sys.path.append('watchmen_core')
+
 from elasticsearch.roll_indexes.roll_indexes import sort_indices_by_creation_date
 
 _indices = {

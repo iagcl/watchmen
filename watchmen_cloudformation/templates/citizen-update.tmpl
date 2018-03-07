@@ -14,33 +14,26 @@
 #
 ---
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Nested AWS stack for Citizen Update resources used by Watchmen.
+Description: AWS stack for Citizen Update resources used by Watchmen.
 
 Parameters:
 
-  Prefix: # Passed from parent stack
+  Prefix:
     Description: Environment prefix.
     Type: String
     AllowedPattern: '[a-z0-9-_]*'
     ConstraintDescription: "Must be lowercase.Hyphen and numbers allowed.No spaces"
 
-  DeployElasticSearch: # Passed from parent stack
-    Description: Conditional parameter to control if ElasticSearch stack should be run.
-    Type: String
-
-  DistributionS3BucketName: # Passed from parent stack
+  DistributionS3BucketName:
     Description: The S3 bucket which stores the citizen template for distribution to the citizens
     Type: String
 
-  DistributionS3BucketAccess: # Passed from parent stack
+  DistributionS3BucketAccess:
     Description: The IP address's that can access the distribution s3 bucket
     Type: String
+    Default: "{{external_cidr}}" # Company's External IP Range to allow access to S3 bucket rather than public access
 
-  LambdaExecutionRole: # Passed from parent stack
-    Description: Lambda execution role
-    Type: String
-
-  LambdaS3Bucket: # Passed from parent stack
+  LambdaS3Bucket:
     Type: String
 
   RetentionInDays: # Using default
@@ -49,20 +42,16 @@ Parameters:
     ConstraintDescription: Must be a valid retention in days Value
     Default: 30
 
-Conditions:
-
-  ShouldDeployElasticSearch: !Equals [ !Ref DeployElasticSearch, true ]
-
 Resources:
 
   CitizenUpdate: # Lambda function that updates the Citizen stack on child AWS accounts
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Join [ "", [ !Ref Prefix , "CitizenUpdate" ] ]
+      FunctionName: !Sub "${Prefix}CitizenUpdate"
       Description: Updates the Citizen Stack
       Handler: citizen_update.lambda_handler
       Timeout: 180
-      Role: !Ref LambdaExecutionRole # Requires the IAM role from RolesStack as it needs to assume roles in other AWS aacounts
+      Role: !Sub "arn:aws:iam::${AWS::AccountId}:role/${Prefix}Watchmen"
       Code:
         S3Bucket: !Ref LambdaS3Bucket
         S3Key: "{{update_citizen_stacks}}"
@@ -72,7 +61,7 @@ Resources:
     Type: "AWS::Logs::LogGroup"
     DependsOn: CitizenUpdate
     Properties:
-      LogGroupName: !Join [ "", [ "/aws/lambda/", !Ref Prefix , "CitizenUpdate"] ]
+      LogGroupName: !Sub "/aws/lambda/${Prefix}CitizenUpdate"
       RetentionInDays: !Ref RetentionInDays
 
   CitizenUpdateSNSTopic: # SNS Topic to trigger to CitizenUdate trigger

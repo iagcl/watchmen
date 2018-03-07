@@ -17,21 +17,11 @@
 AWS Lambda source code for check_root_account_mfa.
 RULE_DESCRIPTION: The root account must have MFA enabled.
 """
-
 import json
-import os
-import sys
 import boto3
-
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-# If the common folder is within the parent folder, add to system path.
-# Otherwise, assume it's a subfolder.
-if os.path.isdir(os.path.join(PARENT_PATH, "common")):
-    sys.path.insert(0, PARENT_PATH)
-
 import common.evaluation as evaluation
 import common.logger as logger
+import common.rule_parameter as rule_parameter
 import common.credential as credential
 
 def get_evaluation_elements(b3_iam, invoking_event):
@@ -77,15 +67,17 @@ def lambda_handler(event, context):
         event: lambda event
         context: lambda context
     """
+    citizen_exec_role_arn = event["citizen_exec_role_arn"]
+    event = event["config_event"]
+
     logger.log_event(event, context, None, None)
 
     invoking_event = json.loads(event["invokingEvent"])
-    rule_parameters = json.loads(event["ruleParameters"])
 
-    arn = rule_parameters["executionRoleArn"] if "executionRoleArn" in rule_parameters else None
-    is_test_mode = rule_parameters["testMode"] if "testMode" in rule_parameters else False
+    parameter = rule_parameter.RuleParameter(event)
+    is_test_mode = parameter.get("testMode", False)
 
-    assumed_creds = credential.get_assumed_creds(boto3.client("sts"), arn)
+    assumed_creds = credential.get_assumed_creds(boto3.client("sts"), citizen_exec_role_arn)
 
     b3_iam = boto3.client("iam", **assumed_creds)
     b3_config = boto3.client("config", **assumed_creds)

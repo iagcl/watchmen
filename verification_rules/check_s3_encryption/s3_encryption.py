@@ -17,6 +17,8 @@
 
 import json
 
+from botocore.exceptions import ClientError
+
 class S3Encryption(object):
     """
     Provides the list of S3 buckets that are compliant.
@@ -37,7 +39,7 @@ class S3Encryption(object):
             Policy statement
         """
         try:
-            s3_bucket_policy = self.client.get_bucket_policy(Bucket=s3_bucket_name['Name'])
+            s3_bucket_policy = self.client.get_bucket_policy(Bucket=s3_bucket_name)
 
         except:
             s3_bucket_policy = []
@@ -49,7 +51,26 @@ class S3Encryption(object):
 
         return policy_statement
 
-    def get_encr_bucket_list(self, s3_bucket_name, policy_statements):
+    def get_default_encr_bucket_list(self, s3_bucket_name):
+        """Verifies whether the bucket has default encryption enabled.
+
+        Args:
+            s3_bucket_name: Name of the S3 Bucket
+        Returns:
+            Name of the S3 Bucket if it has default encryption enabled. Catch exception when no "default encryption" exists on a bucket
+        """
+        try:
+            default_encryption = self.client.get_bucket_encryption(Bucket=s3_bucket_name)
+
+            return s3_bucket_name if 'ServerSideEncryptionConfiguration' in default_encryption else None
+
+        except ClientError as e:   # Handle error when buckets have no 'default encryption'
+            if e.response['Error']['Code'] == 'ServerSideEncryptionConfigurationNotFoundError':
+                return None
+            else:
+                print "Unexpected error: %s" % e
+
+    def get_encr_policy_bucket_list(self, s3_bucket_name, policy_statements):
         """Verifies whether the bucket has encryption policy enabled.
 
         Args:
@@ -65,13 +86,13 @@ class S3Encryption(object):
                             'Deny' in policy_statement['Effect'] and \
                             policy_statement['Condition']['StringNotEquals']['s3:x-amz-server-side-encryption'] == 'AES256':
 
-                        return s3_bucket_name['Name']
+                        return s3_bucket_name
 
                     elif 's3:PutObject' in policy_statement['Action'] and \
                             'Allow' in policy_statement['Effect'] and \
                             policy_statement['Condition']['StringEquals']['s3:x-amz-server-side-encryption'] == 'AES256':
 
-                        return s3_bucket_name['Name']
+                        return s3_bucket_name
 
                 except:
                     return None
@@ -87,10 +108,14 @@ class S3Encryption(object):
         compliant_s3_bucket_list = []
 
         for s3_bucket_name in self.s3_bucket_list:
-            policy_statements = self.get_s3_bucket_policy_statement(s3_bucket_name)
+            policy_statements = self.get_s3_bucket_policy_statement(s3_bucket_name['Name'])
 
             compliant_s3_bucket_list.append(
-                self.get_encr_bucket_list(s3_bucket_name, policy_statements)
+                self.get_encr_policy_bucket_list(s3_bucket_name['Name'], policy_statements)
             )
 
-        return compliant_s3_bucket_list
+            compliant_s3_bucket_list.append(
+                self.get_default_encr_bucket_list(s3_bucket_name['Name'])
+            )
+
+        return list(set([i for i in compliant_s3_bucket_list if i is not None]))
