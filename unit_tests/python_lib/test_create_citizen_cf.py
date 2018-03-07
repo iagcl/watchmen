@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 import python_lib.create_citizen_cf as citizen_cf
 
 def test_get_rules_cf():
@@ -26,4 +27,4 @@ def test_get_rules_cf():
     assert "TestName2:" in result
 
 def test_main():
-    assert citizen_cf.main() is None
+    assert citizen_cf.main(["", os.environ["LOCATION_CORE"] + "/verification_rules"]) is None

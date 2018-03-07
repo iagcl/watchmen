@@ -17,25 +17,14 @@
 Checks whether encryption is enabled on S3
 RULE_DESCRIPTION: S3 buckets must have encryption enabled.
 """
-
-import os
-import sys
 import json
 import boto3
-
-from s3_encryption import S3Encryption
-
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-# If the common folder is within the parent folder, add to system path.
-# Otherwise, assume it's a subfolder.
-if os.path.isdir(os.path.join(PARENT_PATH, "common")):
-    sys.path.insert(0, PARENT_PATH)
-
 import common.credential as credential
 import common.evaluation as evaluation
 import common.logger as logger
 import common.rule_parameter as rule_parameter
+
+from s3_encryption import S3Encryption
 
 def lambda_handler(event, context):
     """

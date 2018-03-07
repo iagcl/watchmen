@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import os, sys
+import os
 import boto3
 import pytest
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from python_lib.get_verification_rules import get_rules_raw
 from python_lib.common import to_pascal_case
@@ -26,7 +24,12 @@ PREFIX = os.environ.get("prefix", "")
 def describe_cf_lambda_functions():
     """Get list of all lambda functions in Watchmen"""
     cf_lambda_functions_list = []
-    raw_lambdas = get_rules_raw()
+    rules_location = os.environ.get("RULES_LOCATION", "")
+
+    if rules_location:
+        raw_lambdas = get_rules_raw(rules_location.split(","))
+    else:
+        raw_lambdas = get_rules_raw()
 
     for rule in raw_lambdas:
         cf_lambda_functions_list.append(PREFIX + to_pascal_case(rule))

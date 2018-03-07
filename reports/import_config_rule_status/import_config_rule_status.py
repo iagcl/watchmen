@@ -160,7 +160,8 @@ def import_config_rule_statuses(table_name, citizen_account, sts, dynamodb, time
             "ImportRunTimestamp": {"S": timestamp}
         }
 
-        dynamodb.put_item(TableName=table_name, Item=rule_item)
+        response = dynamodb.put_item(TableName=table_name, Item=rule_item, ReturnConsumedCapacity="INDEXES")
+        print(response)
 
         return
 
@@ -192,12 +193,14 @@ def import_config_rule_statuses(table_name, citizen_account, sts, dynamodb, time
             items.append({"PutRequest": {"Item": rule_item}})
 
             if len(items) == MAX_ITEMS:
-                dynamodb.batch_write_item(RequestItems={table_name: items})
+                response = dynamodb.batch_write_item(RequestItems={table_name: items}, ReturnConsumedCapacity="INDEXES")
+                print(response)
                 items = []
 
     # If there are some items still left
     if items:
-        dynamodb.batch_write_item(RequestItems={table_name: items})
+        response = dynamodb.batch_write_item(RequestItems={table_name: items}, ReturnConsumedCapacity="INDEXES")
+        print(response)
 
 def delete_all_items(dynamodb, table_name):
     """Deletes all items from the specified table.
@@ -221,12 +224,14 @@ def delete_all_items(dynamodb, table_name):
         )
 
         if len(items) == MAX_ITEMS:
-            dynamodb.batch_write_item(RequestItems={table_name: items})
+            response = dynamodb.batch_write_item(RequestItems={table_name: items}, ReturnConsumedCapacity="INDEXES")
+            print(response)
             items = []
 
     # If there are some items still left
     if items:
-        dynamodb.batch_write_item(RequestItems={table_name: items})
+        response = dynamodb.batch_write_item(RequestItems={table_name: items}, ReturnConsumedCapacity="INDEXES")
+        print(response)
 
 def lambda_handler(event, context):
     """Main function.

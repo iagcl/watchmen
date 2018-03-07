@@ -15,13 +15,10 @@
 #!/bin/bash
 set -euo pipefail
 
-SHELL_LIB="/shell_lib"
-SCRIPT_APP_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}"  )" && pwd  )"
-APP_PATH=${SCRIPT_APP_PATH%$SHELL_LIB}
-ZIP_FILES=${APP_PATH}/zip_files
-[ -d ${ZIP_FILES} ] || mkdir ${ZIP_FILES}
+PARENT_PATH=${PWD}
 
-CURRENT_DIR=`pwd`
+ZIP_FILES=${PARENT_PATH}/zip_files
+[ -d ${ZIP_FILES} ] || mkdir ${ZIP_FILES}
 
 zip_sub_folders()
 {
@@ -79,17 +76,10 @@ zip_folder()
     echo ""
 }
 
-zip_sub_folders ${APP_PATH}/reports
-zip_sub_folders ${APP_PATH}/citizen_updates
-zip_sub_folders ${APP_PATH}/elasticsearch
-zip_folder ${APP_PATH}/proxy_lambda
-
-if [ $LOCATION_CORE == "watchmen_core" ]
-then
-    APP_PATH=$CURRENT_DIR
-fi
-
-zip_sub_folders ${APP_PATH}/verification_rules ${APP_PATH}/verification_rules/common
-
+zip_sub_folders ${PARENT_PATH}/reports
+zip_sub_folders ${PARENT_PATH}/citizen_updates
+zip_sub_folders ${PARENT_PATH}/elasticsearch
+zip_folder ${PARENT_PATH}/proxy_lambda
+zip_sub_folders ${PARENT_PATH}/verification_rules ${PARENT_PATH}/verification_rules/common
 
 aws s3 sync ${ZIP_FILES}/ s3://${BUCKET_NAME_LAMBDA}/ --no-verify-ssl

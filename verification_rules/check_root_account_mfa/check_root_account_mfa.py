@@ -17,19 +17,8 @@
 AWS Lambda source code for check_root_account_mfa.
 RULE_DESCRIPTION: The root account must have MFA enabled.
 """
-
 import json
-import os
-import sys
 import boto3
-
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-
-# If the common folder is within the parent folder, add to system path.
-# Otherwise, assume it's a subfolder.
-if os.path.isdir(os.path.join(PARENT_PATH, "common")):
-    sys.path.insert(0, PARENT_PATH)
-
 import common.evaluation as evaluation
 import common.logger as logger
 import common.rule_parameter as rule_parameter

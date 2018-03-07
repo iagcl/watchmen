@@ -40,7 +40,7 @@ def test_generate_file_folder_missing():
     result = common.generate_file(TEST_FILE, FILE_CONTENT) is None
 
     # Cleanup
-    os.remove(TEST_FILE)
+    shutil.rmtree(TEST_PATH)
 
     assert result
 
@@ -50,7 +50,7 @@ def test_generate_file_file_exists():
     result = common.generate_file(TEST_FILE, FILE_CONTENT) is None
 
     # Cleanup
-    os.remove(TEST_FILE)
+    shutil.rmtree(TEST_PATH)
 
     assert result
 
@@ -65,6 +65,6 @@ def test_get_template():
     file_content = common.get_template(TEST_FILE)
 
     # Cleanup
-    os.remove(TEST_FILE)
+    shutil.rmtree(TEST_PATH)
 
     assert file_content == FILE_CONTENT

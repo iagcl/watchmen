@@ -62,12 +62,14 @@ def delete_all_items(dynamodb, table_name):
         )
 
         if len(items) == MAX_ITEMS:
-            dynamodb.batch_write_item(RequestItems={table_name: items})
+            response = dynamodb.batch_write_item(RequestItems={table_name: items}, ReturnConsumedCapacity="INDEXES")
+            print(response)
             items = []
 
     # If there are some items still left
     if items:
-        dynamodb.batch_write_item(RequestItems={table_name: items})
+        response = dynamodb.batch_write_item(RequestItems={table_name: items}, ReturnConsumedCapacity="INDEXES")
+        print(response)
 
 def main():
     """Populates the CitizenAccount DynamoDB table."""
@@ -96,12 +98,14 @@ def main():
         items.append({"PutRequest": {"Item": item}})
 
         if len(items) == MAX_ITEMS:
-            dynamodb.batch_write_item(RequestItems={citizen_account_table: items})
+            response = dynamodb.batch_write_item(RequestItems={citizen_account_table: items}, ReturnConsumedCapacity="INDEXES")
+            print(response)
             items = []
 
     # If there are some items still left
     if items:
-        dynamodb.batch_write_item(RequestItems={citizen_account_table: items})
+        response = dynamodb.batch_write_item(RequestItems={citizen_account_table: items}, ReturnConsumedCapacity="INDEXES")
+        print(response)
 
 if __name__ == "__main__":
     main()

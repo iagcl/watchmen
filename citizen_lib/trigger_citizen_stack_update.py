@@ -16,18 +16,10 @@
 """
 This python module is for triggering citizen stacks to be updated via SNS
 """
-
 import os
 import json
 import sys
 import boto3
-
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-if os.environ['LOCATION_CORE'] in PARENT_PATH:
-     PARENT_PATH = os.path.dirname(PARENT_PATH)
-
-sys.path.insert(0, PARENT_PATH)
-
 from configuration.initialise_config import watchmen_vars
 
 CANARY_ACCOUNTS = watchmen_vars.CanaryAccounts

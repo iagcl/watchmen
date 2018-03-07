@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-import os, sys
+import os
 import json
 import base64
 import pytest
 
 import boto3
 from botocore.config import Config
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import python_lib.get_verification_rules as verification_rules
 import python_lib.common as common
@@ -32,7 +30,12 @@ PREFIX = os.environ.get("prefix", "")
 def describe_cf_lambda_functions():
     """Get list of all non-proxy lambda functions in Watchmen"""
     cf_lambda_functions_list = []
-    raw_lambdas = verification_rules.get_rules_raw()
+    rules_location = os.environ.get("RULES_LOCATION", "")
+
+    if rules_location:
+        raw_lambdas = verification_rules.get_rules_raw(rules_location.split(","))
+    else:
+        raw_lambdas = verification_rules.get_rules_raw()
 
     for rule in raw_lambdas:
         cf_lambda_functions_list.append(PREFIX + common.to_pascal_case(rule))

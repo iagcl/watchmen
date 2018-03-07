@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 from mock import patch
+
 import python_lib.create_elastic_search_cf as elastic_search_cf
 
 def test_get_subscriptions_cf():
@@ -28,4 +30,4 @@ def test_get_subscriptions_cf():
 
 @patch("python_lib.get_checksum_zip.get_checksum_zip", return_value="roll_indexes.123.zip")
 def test_main(mock_checksum_zip):
-    assert elastic_search_cf.main() is None
+    assert elastic_search_cf.main(["", os.environ["LOCATION_CORE"] + "/verification_rules"]) is None

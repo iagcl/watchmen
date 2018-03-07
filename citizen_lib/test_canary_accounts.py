@@ -14,22 +14,17 @@
 #
 import os
 import re
-import sys
 import time
 from datetime import datetime
 from datetime import timedelta
 
 import boto3
 import pytest
-
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-sys.path.insert(0, PARENT_PATH)
-
 from citizen_lib.trigger_citizen_stack_update import get_canary_accounts
 
 MAIN_CITIZEN_FILE = "citizen-rules-cfn.yml"
-PREFIX = os.environ['prefix'] if "prefix" in os.environ else ""
-CITIZEN_S3_BUCKET = os.environ['CITIZEN_S3_BUCKET'] if "CITIZEN_S3_BUCKET" in os.environ else ""
+PREFIX = os.environ.get("prefix", "")
+CITIZEN_S3_BUCKET = os.environ.get("CITIZEN_S3_BUCKET", "")
 
 def get_main_citizen_version(bucket):
     citizen_template_stream = boto3.client("s3", verify=False).get_object(Bucket=bucket, Key=MAIN_CITIZEN_FILE)
@@ -117,13 +112,14 @@ def get_citizen_stacks(stacks, prefix):
 def account_updated(account, main_citizen_version):
     max_timeout = datetime.now() + timedelta(seconds=180)
 
+    arn = "arn:aws:iam::{}:role/{}CitizenUpdate".format(account, PREFIX)
+
+    assumed_creds = get_assumed_creds(boto3.client("sts", verify=False), arn)
+    b3_cloudformation = boto3.client("cloudformation", verify=False, **assumed_creds)
+
     # while the time is within the timeout
     while datetime.now() <= max_timeout:
         stack_updated = False
-        arn = "arn:aws:iam::{}:role/{}CitizenUpdate".format(account, PREFIX)
-
-        assumed_creds = get_assumed_creds(boto3.client("sts", verify=False), arn)
-        b3_cloudformation = boto3.client("cloudformation", verify=False, **assumed_creds)
 
         stacks = describe_stacks(b3_cloudformation)
         citizen_stacks = get_citizen_stacks(stacks, PREFIX)
@@ -132,7 +128,8 @@ def account_updated(account, main_citizen_version):
             stack_updated = True
 
             for citizen_stack in citizen_stacks:
-                if main_citizen_version != citizen_stack["Version"] or citizen_stack["StackStatus"] not in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]:
+                if main_citizen_version != citizen_stack["Version"] or \
+                        citizen_stack["StackStatus"] not in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]:
                     stack_updated = False
 
             if stack_updated:

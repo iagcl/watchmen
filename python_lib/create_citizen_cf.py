@@ -12,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
+import sys
 import get_verification_rules
 import common
-import os
 
 RULES_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"citizen_cloudformation/templates/citizen-rules-cfn.tmpl"
 TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"citizen_cloudformation/files/citizen-rules-cfn.yml"
@@ -50,13 +51,20 @@ def get_rules_cf(rules):
 
     return snippet
 
-def main():
+def main(args):
+    # If no parameters were passed in
+    if len(args) == 1:
+        rules = get_verification_rules.get_rules()
+    else:
+        # Parameter contains paths, e.g. ./verification_rules,./folder1/verification_rules
+        rules = get_verification_rules.get_rules(args[1].split(","))
+
     citizen_rules_cfn = common.get_template(RULES_TEMPLATE_BASE).replace(
         "{{citizen_rules}}",
-        get_rules_cf(get_verification_rules.get_rules())
+        get_rules_cf(rules)
     )
 
     common.generate_file(TEMPLATE_DESTINATION, citizen_rules_cfn)
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

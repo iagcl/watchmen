@@ -17,24 +17,14 @@
 AWS Lambda source code for check_cloudtrail
 RULE_DESCRIPTION: CloudTrail must be enabled for Woodstock S3 bucket for all regions, all Read/Write events with log file validation enabled.
 """
-
-import os
-import sys
 import json
 import boto3
-
-from cloudtrail import CloudTrail
-
-# If the common folder is within the parent folder, add to system path.
-# Otherwise, assume it's a subfolder.
-PARENT_PATH = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
-if os.path.isdir(os.path.join(PARENT_PATH, "common")):
-    sys.path.insert(0, PARENT_PATH)
-
 import common.credential as credential
 import common.evaluation as evaluation
 import common.logger as logger
 import common.rule_parameter as rule_parameter
+
+from cloudtrail import CloudTrail
 
 def get_compliance_type(b3_cloudtrail):
     """Returns the compliance type i.e. Compliant or Non_Compliant

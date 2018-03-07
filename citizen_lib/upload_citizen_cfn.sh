@@ -16,28 +16,18 @@
 set -e
 
 # Assign environment variable values if set , else use default values
-
 CITIZEN_S3_BUCKET=${CITIZEN_S3_BUCKET:-"watchmen-citizen-templates"}
 CITIZEN_RULES=${CITIZEN_RULES:-"$LOCATION_CORE/citizen_cloudformation/files/citizen-rules-cfn.yml"}
 CITIZEN_BOOTSTRAP=${CITIZEN_BOOTSTRAP:-"$LOCATION_CORE/citizen_cloudformation/files/citizen-bootstrap-cfn.yml"}
 
-
 # CITIZEN_VERSION=Current Date with Time (Australian time) 'YYMMDD.HMS'
-
 DATE_WITH_TIME=`TZ=Australia/Sydney date "+%Y%m%d.%H%M%S"`
 CITIZEN_VERSION=${DATE_WITH_TIME}
 
+# Works for both Linux and Mac
+sed -i"" -E "s/XXX-CITIZEN-VERSION-XXX/${CITIZEN_VERSION}/g" $CITIZEN_RULES
+
 # Upload the citizen-bootstrap-cfn.yml and citizen-rules-cfn.yml to CITIZEN_S3_BUCKET
-
-if [ -n $IS_IN_DOCKER ] && [ "$IS_IN_DOCKER" == "TRUE" ]
-then
-    sed -i "s/XXX-CITIZEN-VERSION-XXX/${CITIZEN_VERSION}/g" $CITIZEN_RULES
-else
-    sed -i "" -e "s/XXX-CITIZEN-VERSION-XXX/${CITIZEN_VERSION}/g" $CITIZEN_RULES
-fi
-
 aws s3 --no-verify-ssl cp ${CITIZEN_RULES} s3://${CITIZEN_S3_BUCKET}/citizen-rules-cfn.yml
 aws s3 --no-verify-ssl cp ${CITIZEN_RULES} s3://${CITIZEN_S3_BUCKET}/archive/citizen-rules-cfn_${CITIZEN_VERSION}.yml
 aws s3 --no-verify-ssl cp ${CITIZEN_BOOTSTRAP} s3://${CITIZEN_S3_BUCKET}/citizen-bootstrap-cfn.yml
-
-

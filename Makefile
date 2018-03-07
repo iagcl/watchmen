@@ -14,6 +14,7 @@
 #
 # Location of the opensource watchmen_core repository
 export LOCATION_CORE=.
+export PYTHONPATH := .:./verification_rules
 
 PROJECT=watchmen_base
 
@@ -25,9 +26,9 @@ endef
 export HELP_TEXT
 
 help: ## Help target
-		@echo "$$HELP_TEXT"
-		@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / \
-			{printf "\033[36m%-30s\033[0m  %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+	@echo "$$HELP_TEXT"
+	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / \
+		{printf "\033[36m%-30s\033[0m  %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 build-docker-base-image:
 	@echo "$(INFO) Preparing Docker build env image"
@@ -216,7 +217,7 @@ create-citizen-cf: clean
 	python $(LOCATION_CORE)/python_lib/create_citizen_cf.py
 
 upload-citizen:
-	bash $(LOCATION_CORE)/citizen_lib/upload_citizen_cfn.sh
+	$(LOCATION_CORE)/citizen_lib/upload_citizen_cfn.sh
 
 upload-citizen-combined: create-citizen-cf upload-citizen
 
@@ -228,9 +229,8 @@ upload-citizen-in-docker: build-docker-base-image ## Create and upload citizen t
 		-e AWS_SESSION_TOKEN \
 		-e AWS_DEFAULT_REGION \
 		-e CITIZEN_S3_BUCKET \
-		-e IS_IN_DOCKER=TRUE \
 		$(PROJECT) \
-		/bin/bash -c "make upload-citizen-combined"
+		/bin/sh -c "make upload-citizen-combined"
 
 ### Trigger Citizen Stack Update via SNS Topic in Watchmen ###
 ### Set environment variables for AWS credentials, AWS_DEFAULT_REGION, CITIZEN_S3_BUCKET, Citizen Update SNS Topic ARN (arn:aws:sns:<aws region>:<watchmen_account_number>:watchmen-citizen-updates) and prefix (if applicable)
@@ -283,7 +283,7 @@ sns-prod-in-docker: build-docker-base-image ## Sends SNS message to trigger Citi
 		/bin/sh -c "make sns-prod"
 
 canary-tests:
-	pytest $(LOCATION_CORE)/citizen_lib/test_canary_accounts.py --verbose -s --junitxml htmlcov/junit.xml --html htmlcov/canary_test_report.html --self-contained-html
+	pytest --verbose -s $(LOCATION_CORE)/citizen_lib/test_canary_accounts.py
 
 canary-tests-in-docker: build-docker-base-image ## Run canary tests to check canary Citizen accounts using docker.
 	@docker run -i \
@@ -320,7 +320,6 @@ git-secrets-in-docker: build-docker-base-image ## Run git-secrets using docker.
 	@rm $@.cid
 
 pylint: clean
-	pip install -e .
 	pylint $(LOCATION_CORE)/citizen_updates \
 		$(LOCATION_CORE)/elasticsearch \
 		$(LOCATION_CORE)/python_lib \
@@ -334,16 +333,13 @@ pylint-in-docker: build-docker-base-image  ## Run pylint using docker.
 		/bin/sh -c "make pylint"
 
 unit-tests: clean
-	pip install -e .
 	pytest --verbose -s \
 		--cov=$(LOCATION_CORE)/verification_rules \
 		--cov=$(LOCATION_CORE)/reports \
 		--cov=$(LOCATION_CORE)/proxy_lambda \
 		--cov=$(LOCATION_CORE)/python_lib \
-		--cov-report html \
-		--junitxml htmlcov/junit.xml \
-		--html=htmlcov/test_report.html \
-		--self-contained-html
+		--cov-report html
+
 	@echo "Test all unit tests via pytest"
 
 unit-tests-in-docker: build-docker-base-image  ## Run unit tests using docker.

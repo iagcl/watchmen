@@ -12,16 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-import time
 import os
-from datetime import datetime
-import sys
 import boto3
 import pytest
-import yaml
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 from python_lib.get_verification_rules import get_rules_raw
 from python_lib.common import to_pascal_case
@@ -40,7 +33,12 @@ def default_constructor(loader, tag_suffix, node):
 def describe_cf_config_rules():
     """Get list of all config rules in Citizen Cloud Formation"""
     cf_config_rules_list = []
-    raw_lambdas = get_rules_raw()
+    rules_location = os.environ.get("RULES_LOCATION", "")
+
+    if rules_location:
+        raw_lambdas = get_rules_raw(rules_location.split(","))
+    else:
+        raw_lambdas = get_rules_raw()
 
     for rule in raw_lambdas:
         cf_config_rules_list.append(PREFIX + to_pascal_case(rule))

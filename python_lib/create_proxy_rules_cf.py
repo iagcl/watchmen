@@ -15,11 +15,11 @@
 """
 Creates the proxy rules CloudFormation template.
 """
-import json
+import os
+import sys
 import common
 import get_checksum_zip
 import get_verification_rules
-import os
 
 RULE_TEMPLATE_BASE = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/templates/proxy-rules.tmpl"
 TEMPLATE_DESTINATION = os.environ['LOCATION_CORE']+"/"+"watchmen_cloudformation/files/proxy-rules.yml"
@@ -39,11 +39,16 @@ def get_env_vars_snippet(env_vars):
 
     return snippet
 
-def get_cloud_formation_snippet():
+def get_cloud_formation_snippet(rules_location=None):
     """Generates a Lambda CloudFormation snippet for the proxy rules."""
     snippet = ""
 
-    for rule in get_verification_rules.get_rules():
+    if rules_location is None:
+        rules = get_verification_rules.get_rules()
+    else:
+        rules = get_verification_rules.get_rules(rules_location)
+
+    for rule in rules:
         template = \
 """  Lambda{function_name}:
     Type: AWS::Lambda::Function
@@ -86,14 +91,21 @@ def get_cloud_formation_snippet():
 
     return snippet
 
-def main():
+def main(args):
     """Main function"""
+    # If no parameters were passed in
+    if len(args) == 1:
+        cloud_formation_snippet = get_cloud_formation_snippet()
+    else:
+        # Parameter contains paths, e.g. ./verification_rules,./folder1/verification_rules
+        cloud_formation_snippet = get_cloud_formation_snippet(args[1].split(","))
+
     template = common.get_template(RULE_TEMPLATE_BASE).replace(
         "{{proxy_rules}}",
-        get_cloud_formation_snippet()
+        cloud_formation_snippet
     )
 
     common.generate_file(TEMPLATE_DESTINATION, template)
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv)

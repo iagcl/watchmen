@@ -15,6 +15,8 @@
 import os
 import python_lib.get_verification_rules as verification_rules
 
+RULES_LOCATION = [os.environ["LOCATION_CORE"] + "/verification_rules"]
+
 def test_get_rules_raw_default():
     assert verification_rules.get_rules_raw()
 
@@ -26,10 +28,10 @@ def test_get_rules():
 
 def test_get_environment():
     os.environ["BUCKET_NAME_DISTRIBUTION"] = "test_bucket"
-    result = verification_rules.get_environment("check_citizen_version")
+    result = verification_rules.get_environment(RULES_LOCATION, "check_citizen_version")
     os.environ.pop("BUCKET_NAME_DISTRIBUTION")
 
     assert result
 
 def test_get_description():
-    assert verification_rules.get_description("check_citizen_version")
+    assert verification_rules.get_description(RULES_LOCATION, "check_citizen_version")

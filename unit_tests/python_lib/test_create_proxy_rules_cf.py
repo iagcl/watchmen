@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+import os
 from mock import patch
+
 import python_lib.create_proxy_rules_cf as proxy_rules_cf
 
 def test_get_env_vars_snippet():
@@ -28,4 +30,4 @@ def test_get_cloud_formation_snippet(mock_checksum_zip):
 
 @patch("python_lib.get_checksum_zip.get_checksum_zip", return_value="")
 def test_main(mock_checksum_zip):
-    assert proxy_rules_cf.main() is None
+    assert proxy_rules_cf.main(["", os.environ["LOCATION_CORE"] + "/verification_rules"]) is None
