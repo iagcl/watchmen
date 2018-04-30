@@ -29,7 +29,7 @@ def _resp_trails_valid():
             {
                 "IncludeGlobalServiceEvents": True,
                 "Name": "LumberjackCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": True,
                 "HasCustomEventSelectors": False,
@@ -46,11 +46,11 @@ def _resp_trails_invalid():
             {
                 "IncludeGlobalServiceEvents": True,
                 "Name": "LumberjackCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": False,
                 "HasCustomEventSelectors": False,
-                "S3BucketName": "mock-iag-cloudtrail-logs",
+                "S3BucketName": "mock-cloudtrail-logs",
                 "HomeRegion": "ap-southeast-2"
             }
         ]
@@ -70,7 +70,7 @@ def _resp_trails_multi_region_false():
             {
                 "IncludeGlobalServiceEvents": True,
                 "Name": "LumberjackCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": False,
                 "HasCustomEventSelectors": False,
@@ -87,7 +87,7 @@ def _resp_trails_s3_bucket_blank():
             {
                 "IncludeGlobalServiceEvents": True,
                 "Name": "LumberjackCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": True,
                 "HasCustomEventSelectors": False,
@@ -104,7 +104,7 @@ def _resp_trails_encrypt_log_files_true():
             {
                 "IncludeGlobalServiceEvents": True,
                 "Name": "LumberjackCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": True,
                 "HasCustomEventSelectors": False,
@@ -122,7 +122,7 @@ def _resp_trails_log_file_validation_enabled_false():
             {
                 "IncludeGlobalServiceEvents": True,
                 "Name": "LumberjackCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": False,
                 "IsMultiRegionTrail": True,
                 "HasCustomEventSelectors": False,
@@ -176,7 +176,7 @@ def _resp_event_selectors_valid():
                 "ReadWriteType": "All"
             }
         ],
-        "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail"
+        "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail"
     }
 
 @pytest.fixture(scope="function")
@@ -189,7 +189,7 @@ def _resp_event_selectors_readwrite_type_read():
                 "ReadWriteType": "Read"
             }
         ],
-        "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail"
+        "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail"
     }
 
 @pytest.fixture(scope="function")
