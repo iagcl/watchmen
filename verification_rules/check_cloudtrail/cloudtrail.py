@@ -66,10 +66,6 @@ class CloudTrail(object):
             if event_selectors[0]["ReadWriteType"] != "All":
                 continue
 
-            # if S3 Bucket name is not "woodstock-iag-cloudtrail-logs" (Woodstock bucket name)
-            if trail["S3BucketName"] != "woodstock-iag-cloudtrail-logs":
-                continue
-
             # if "Encrypt log files" is set
             if "KmsKeyId" in trail:
                 continue
