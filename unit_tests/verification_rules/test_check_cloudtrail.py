@@ -28,12 +28,12 @@ def _resp_trails_valid():
         "trailList": [
             {
                 "IncludeGlobalServiceEvents": True,
-                "Name": "LumberjackIagCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "Name": "LumberjackCloudTrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": True,
                 "HasCustomEventSelectors": False,
-                "S3BucketName": "woodstock-iag-cloudtrail-logs",
+                "S3BucketName": "mock-cloudtrail-logs",
                 "HomeRegion": "ap-southeast-2"
             }
         ]
@@ -45,12 +45,12 @@ def _resp_trails_invalid():
         "trailList": [
             {
                 "IncludeGlobalServiceEvents": True,
-                "Name": "NonLumberjackIagCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "Name": "LumberjackCloudTrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
-                "IsMultiRegionTrail": True,
+                "IsMultiRegionTrail": False,
                 "HasCustomEventSelectors": False,
-                "S3BucketName": "non_woodstock-iag-cloudtrail-logs",
+                "S3BucketName": "mock-cloudtrail-logs",
                 "HomeRegion": "ap-southeast-2"
             }
         ]
@@ -69,12 +69,12 @@ def _resp_trails_multi_region_false():
         "trailList": [
             {
                 "IncludeGlobalServiceEvents": True,
-                "Name": "LumberjackIagCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "Name": "LumberjackCloudTrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": False,
                 "HasCustomEventSelectors": False,
-                "S3BucketName": "woodstock-iag-cloudtrail-logs",
+                "S3BucketName": "mock-cloudtrail-logs",
                 "HomeRegion": "ap-southeast-2"
             }
         ]
@@ -86,29 +86,12 @@ def _resp_trails_s3_bucket_blank():
         "trailList": [
             {
                 "IncludeGlobalServiceEvents": True,
-                "Name": "LumberjackIagCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "Name": "LumberjackCloudTrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": True,
                 "HasCustomEventSelectors": False,
                 "S3BucketName": "",
-                "HomeRegion": "ap-southeast-2"
-            }
-        ]
-    }
-
-@pytest.fixture(scope="function")
-def _resp_trails_s3_bucket_non_woodstock():
-    return {
-        "trailList": [
-            {
-                "IncludeGlobalServiceEvents": True,
-                "Name": "NonLumberjackCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
-                "LogFileValidationEnabled": True,
-                "IsMultiRegionTrail": True,
-                "HasCustomEventSelectors": False,
-                "S3BucketName": "non-woodstock-bucket",
                 "HomeRegion": "ap-southeast-2"
             }
         ]
@@ -120,12 +103,12 @@ def _resp_trails_encrypt_log_files_true():
         "trailList": [
             {
                 "IncludeGlobalServiceEvents": True,
-                "Name": "LumberjackIagCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "Name": "LumberjackCloudTrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": True,
                 "IsMultiRegionTrail": True,
                 "HasCustomEventSelectors": False,
-                "S3BucketName": "woodstock-iag-cloudtrail-logs",
+                "S3BucketName": "mock-cloudtrail-logs",
                 "KmsKeyId": "arn:aws:kms:ap-southeast-2:123456789012:key/0c2db3a3-4de6-4a9c-b16f-43bf8c72c27b",
                 "HomeRegion": "ap-southeast-2"
             }
@@ -138,12 +121,12 @@ def _resp_trails_log_file_validation_enabled_false():
         "trailList": [
             {
                 "IncludeGlobalServiceEvents": True,
-                "Name": "LumberjackIagCloudTrail",
-                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail",
+                "Name": "LumberjackCloudTrail",
+                "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail",
                 "LogFileValidationEnabled": False,
                 "IsMultiRegionTrail": True,
                 "HasCustomEventSelectors": False,
-                "S3BucketName": "woodstock-iag-cloudtrail-logs",
+                "S3BucketName": "mock-cloudtrail-logs",
                 "HomeRegion": "ap-southeast-2"
             }
         ]
@@ -193,7 +176,7 @@ def _resp_event_selectors_valid():
                 "ReadWriteType": "All"
             }
         ],
-        "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail"
+        "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail"
     }
 
 @pytest.fixture(scope="function")
@@ -206,7 +189,7 @@ def _resp_event_selectors_readwrite_type_read():
                 "ReadWriteType": "Read"
             }
         ],
-        "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/iag-cloudtrail"
+        "TrailARN": "arn:aws:cloudtrail:ap-southeast-2:123456789012:trail/mock-cloudtrail"
     }
 
 @pytest.fixture(scope="function")
@@ -291,11 +274,6 @@ class TestCloudTrail(object):
 
         assert not cloudtrail.is_settings_correct
 
-    def test_s3_bucket_non_woodstock(self, _resp_trails_s3_bucket_non_woodstock, _resp_trail_status_valid, _resp_event_selectors_valid):
-        b3_cloudtrail, stubber = _get_stubber(_resp_trails_s3_bucket_non_woodstock, _resp_trail_status_valid, _resp_event_selectors_valid)
-        cloudtrail = _get_cloudtrail(stubber, b3_cloudtrail)
-
-        assert not cloudtrail.is_settings_correct
 
     def test_encrypt_log_files_true(self, _resp_trails_encrypt_log_files_true, _resp_trail_status_valid, _resp_event_selectors_valid):
         b3_cloudtrail, stubber = _get_stubber(_resp_trails_encrypt_log_files_true, _resp_trail_status_valid, _resp_event_selectors_valid)
@@ -323,7 +301,7 @@ class TestCheckCloudTrail(object):
 
         assert compliance_type == "NON_COMPLIANT"
 
-    def test_non_compliant_incorrect_s3_bucket(self, _resp_trails_invalid, _resp_trail_status_valid, _resp_event_selectors_valid):
+    def test_non_compliant_incorrect_trail_configuration(self, _resp_trails_invalid, _resp_trail_status_valid, _resp_event_selectors_valid):
         b3_cloudtrail, stubber = _get_stubber(_resp_trails_invalid, _resp_trail_status_valid, _resp_event_selectors_valid)
         compliance_type = _get_compliance_type(stubber, b3_cloudtrail)
 
