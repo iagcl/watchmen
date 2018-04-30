@@ -15,7 +15,7 @@
 
 """
 AWS Lambda source code for check_cloudtrail
-RULE_DESCRIPTION: CloudTrail must be enabled for Woodstock S3 bucket for all regions, all Read/Write events with log file validation enabled.
+RULE_DESCRIPTION: CloudTrail must be enabled in all regions,for all Read/Write events with log file validation enabled.
 """
 import json
 import boto3
