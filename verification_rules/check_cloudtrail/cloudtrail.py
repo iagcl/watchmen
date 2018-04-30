@@ -66,7 +66,7 @@ class CloudTrail(object):
             if event_selectors[0]["ReadWriteType"] != "All":
                 continue
 
-            # if S3 Bucket exists
+            # if S3 Bucket does not exist
             if not trail["S3BucketName"]:
                 continue
 
