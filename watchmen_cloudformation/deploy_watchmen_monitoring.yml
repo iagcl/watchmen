@@ -19,11 +19,9 @@
     prefix: ""
     s3_cf_bucket:     "{{ BUCKET_NAME_CF }}"
     env:              "{{ ENV }}"
-    billing_code:     CC7504126
     stack_name:       Watchmen-Monitoring
     application:      Watchmen
     server_name:      WatchmenLambda
-    launched_by:      bamboo_user
   tasks:
 
     - name: "Logging deployment variables"
@@ -42,10 +40,8 @@
           Prefix: "{{ prefix }}"
         tags:
           Environment: "{{ env }}"
-          Billing Code: "{{ billing_code }}"
           Application: "{{ application }}"
           Server Name: "{{ server_name }}"
-          Launched By: "{{ launched_by }}"
         region: "{{ REGION }}"
 
     - name: "Get CloudFormation stack info"

@@ -24,11 +24,9 @@
     deploy_citizen_update: "{{ DEPLOY_CITIZEN_UPDATE }}"
     create_subscription: "{{ CREATE_SUBSCRIPTION }}"
     env: "{{ ENV }}"
-    billing_code: CC7504126
     stack_name: Watchmen-ElasticSearch
     application: Watchmen
     server_name: WatchmenLambda
-    launched_by: bamboo_user
   tasks:
 
     - name: "Logging deployment variables"
@@ -57,10 +55,8 @@
           CreateSubscription: "{% if create_subscription  == '' %}{{ 'true' }}{% else %}{{ create_subscription }}{% endif %}"
         tags:
           Environment: "{{ env }}"
-          Billing Code: "{{ billing_code }}"
           Application: "{{ application }}"
           Server Name: "{{ server_name }}"
-          Launched By: "{{ launched_by }}"
         region: "{{ REGION }}"
 
     - name: "Get CloudFormation stack info"
